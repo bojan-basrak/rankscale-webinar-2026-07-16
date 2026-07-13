@@ -1,0 +1,23 @@
+# --- Secrets & credentials (NEVER commit these) ---
+.env
+.env.*
+*.key
+*.pem
+*secret*
+*credentials*
+*api_key*
+*apikey*
+*token*
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*~
+
+# --- Local temp / build ---
+.tmp.driveupload/
+node_modules/
+dist/
+build/
