@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How consistent are AI engines? A Rankscale variance study</title>
+  <link rel="stylesheet" href="assets/base.css">
+  <style>
+    /* ---- page-specific: AI engine consistency ---- */
+    header.masthead{padding:64px 0 46px;background:radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--teal) 8%, transparent), transparent 62%)}
+    table{min-width:640px}
+    .callout{border-left-color:var(--amber)}
+    tr.total td{background:var(--surface-2);font-weight:600}
+    .defs{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:1.4rem 0}
+    .def{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 12px 12px 0;padding:14px 18px}
+    .def h3{font-size:1.05rem;margin-bottom:.2rem}
+    .def .tech{font-family:var(--mono);font-size:.7rem;color:var(--faint);text-transform:uppercase;letter-spacing:.08em}
+    .def p{margin:.35rem 0 0;font-size:.93rem;color:var(--muted);line-height:1.55}
+    .badge{font-family:var(--mono);font-size:.6rem;font-weight:600;letter-spacing:.06em;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:1px}
+    .badge.api{background:var(--teal-soft);color:var(--teal)} .badge.gui{background:var(--amber-soft);color:var(--amber)}
+    .cbar{position:relative;display:inline-block;min-width:56px;text-align:right}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--muted);margin-bottom:8px}
+    .legend span{display:inline-flex;align-items:center;gap:6px}
+    .legend i{width:16px;height:0;border-top-width:2px;border-top-style:solid;display:inline-block}
+    .legend i.dash{border-top-style:dashed}
+  </style>
+</head>
+<body>
+
+<nav class="sitenav" aria-label="Webinar sections">
+  <div class="inner">
+    <a class="brand" href="index.html">Rankscale × Claude Code</a>
+    <a href="index.html">Overview</a>
+    <a href="mcp-vs-api.html">📊 MCP vs API</a>
+    <a href="ai-engine-consistency.html" aria-current="page">🎯 AI Consistency</a>
+  </div>
+</nav>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Rankscale variance study &middot; De'Longhi (US)</p>
+    <h1>How consistent are AI engines when they recommend brands?</h1>
+    <p class="dek">If you ask the same question twice, do you get the same brands, in the same order? We measured the run-to-run stability of nine AI engines across 1,722 real executions — and where the wobble actually lives.</p>
+    <div class="meta">
+      <span>7 topics &times; 9 engines = 63 cells</span>
+      <span>1,722 executions</span>
+      <span>~46 days tracked</span>
+      <span>Source: Rankscale REST API</span>
+    </div>
+  </div>
+</header>
+
+<section id="findings">
+  <div class="wrap"><p class="eyebrow">Key findings</p><h2>The short version</h2>
+  <p class="lead">Consistency is a headline score for "same answer twice?"; three sub-metrics say <em>in what way</em> an engine varies.</p></div>
+  <div class="wide"><div class="findgrid reveal">
+    <div class="find hero"><span class="k">The headline</span><h3>No AI engine is highly consistent — and the churn is in the lineup, not the ranking</h3>
+      <p>Across every engine, the exact set of brands named shifts run-to-run (Lineup Stability ~54%), while the <em>order</em> of the brands that do appear is far steadier (Order Stability ~76%) and the top pick holds ~71% of the time. Being "the answer" once doesn't mean you're the answer next time.</p></div>
+    <div class="find"><span class="k">API vs GUI</span><h3>Structured APIs beat live-web surfaces</h3><p>The four <code>[API]</code> engines occupy the top of the consistency leaderboard; the live-web <code>[GUI]</code> surfaces (Google AI Overview, ChatGPT) sit at the bottom.</p></div>
+    <div class="find"><span class="k">Stabilization</span><h3>Estimates settle by ~10–15 runs</h3><p>Consistency scores wobble for the first few executions, then flatten. ~25 runs per prompt is comfortably enough to trust the number.</p></div>
+    <div class="find"><span class="k">Range</span><h3>Best to worst: 35.8% → 22.0%</h3><p>Claude 4.5 Haiku [API] leads; Google AI Overview [GUI] trails — a 14-point spread in overall Consistency.</p></div>
+  </div></div>
+</section>
+
+<section id="method">
+  <div class="wrap"><p class="eyebrow">How we measure it</p><h2>One headline, three diagnoses</h2>
+  <p>The unit is a single prompt run repeatedly on a single engine. We take each execution's answer, extract the ordered list of brands it names (matched against Rankscale's own tracked brand set), and compare those lists across runs. One headline number, three that explain it.</p>
+  <div class="defs">
+    <div class="def"><span class="tech">RBO, top-weighted</span><h3>Consistency</h3><p>Overall, how repeatable is the answer — weighting the top of the list most? The headline score. Best read comparatively between engines.</p></div>
+    <div class="def"><span class="tech">Jaccard overlap</span><h3>Lineup Stability</h3><p>Does it name the same brands each time?</p></div>
+    <div class="def"><span class="tech">Kendall &tau;, rescaled</span><h3>Order Stability</h3><p>Does it keep those brands in the same order? 50% = no better than random ordering.</p></div>
+    <div class="def"><span class="tech">Modal #1 share</span><h3>Top Pick Stability</h3><p>How often does it name the same brand first — the number brands care about most.</p></div>
+  </div></div>
+</section>
+
+<section id="leaderboard">
+  <div class="wrap"><p class="eyebrow">Deliverable 1</p><h2>AI Engine leaderboard</h2>
+  <p>Each engine averaged across its 7 topics, sorted by Consistency. <code>[API]</code> = provider API; <code>[GUI]</code> = live browser surface.</p></div>
+  <div class="wide"><div class="tablewrap reveal">
+    <table>
+      <thead><tr><th>AI Engine</th><th class="n">Consistency</th><th class="n">Lineup</th><th class="n">Order</th><th class="n">Top Pick</th><th class="n">avg runs</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+  </div>
+  <p style="font-size:.9rem;color:var(--muted)">Consistency (RBO) is top-weighted and runs low in absolute terms — compare engines to each other, not to 100%. Lineup / Order / Top Pick are directly interpretable.</p>
+  </div>
+</section>
+
+<section id="heatmap">
+  <div class="wrap"><p class="eyebrow">Deliverable 2</p><h2>Consistency by topic</h2>
+  <p>Every engine &times; topic cell. Darker = more consistent. The averages hide sharp topic effects — some cells are near-perfect, others barely above noise.</p></div>
+  <div class="wide"><figure class="reveal">
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap">
+      <span>Consistency</span><span style="display:inline-block;width:120px;height:10px;border-radius:3px;background:linear-gradient(90deg,rgb(224,240,237),rgb(15,90,80))"></span><span>15% → 40%+ &nbsp;·&nbsp; rounded to whole %</span></div>
+    <div id="hm" style="overflow-x:auto"></div>
+    <figcaption>Claude 4.5 Haiku [API] returns an identical list every run on "bean to cup" (100%) — a topic De'Longhi dominates — yet drops to ~20% on manual espresso. Google AI Overview [GUI] is the most volatile across the board.</figcaption>
+  </figure></div>
+</section>
+
+<section id="convergence">
+  <div class="wrap"><p class="eyebrow">Deliverable 3</p><h2>Does consistency stabilize with more runs?</h2>
+  <p>Consistency recomputed on the first <em>k</em> executions, for growing <em>k</em>. Solid lines = <code>[API]</code> engines, dashed = <code>[GUI]</code>.</p></div>
+  <div class="wide"><figure class="reveal">
+    <div class="legend" id="cvLegend"></div>
+    <div style="overflow-x:auto"><svg id="cv" viewBox="0 0 1000 440" role="img" aria-label="Consistency versus number of runs for nine engines; curves flatten by 10 to 15 runs. API engines settle highest, GUI engines lowest."></svg></div>
+    <figcaption>Every curve flattens by roughly 10–15 runs — the estimate converges, and the engine ranking is stable from ~k=10 on. Chart capped at k=26, where all nine engines still have all seven topics supporting each point.</figcaption>
+  </figure></div>
+</section>
+
+<section id="caveats">
+  <div class="wrap"><p class="eyebrow">Method &amp; caveats</p><h2>How to read these numbers responsibly</h2>
+  <div class="callout"><span class="k">Read with these in mind</span>
+  <ul>
+    <li><strong>Brands seen through Rankscale.</strong> Extraction is limited to Rankscale's tracked brand set per prompt; brands it doesn't track are invisible, which biases all scores slightly upward.</li>
+    <li><strong>Real-world drift is included.</strong> Over ~46 days the market itself shifts, so a little "inconsistency" is the world changing, not the model. Isolating pure model stochasticity would need dense same-day repeat runs.</li>
+    <li><strong>Consistency (RBO) is a comparative scale.</strong> Top-weighted overlap on short lists runs low in absolute terms — use it to rank engines, not as a "70% = good" gauge.</li>
+    <li><strong>Extraction is deterministic string-matching</strong> against Rankscale's alias lists (first-mention order = position), not a language model — fast and reproducible, with minor matching noise.</li>
+  </ul></div>
+  <p style="font-size:.9rem;color:var(--muted)">Data: De'Longhi (US), pulled once via <code>POST /v1/metrics/search-terms-report</code> (all 63 search terms, answer texts included), analyzed offline. Reproducible against the same workspace.</p>
+  </div>
+</section>
+
+<footer><div class="wrap"><p style="margin:0">AI Engine Consistency — a Rankscale variance study on De'Longhi (US). 1,722 executions across 9 engines &times; 7 topics, 2026-07-13. Consistency = Rank-Biased Overlap (p=0.9); Order Stability = rescaled Kendall &tau;; Lineup = Jaccard; Top Pick = modal #1 share.</p></div></footer>
+
+<script>
+(function(){
+  var engines=[
+    {name:"Claude 4.5 Haiku",tier:"api",c:35.8,l:58.5,o:75.4,t:64.1,n:27.9,col:"#7c3aed"},
+    {name:"Gemini 3 Flash",tier:"api",c:35.2,l:61.2,o:76.5,t:72.0,n:27.6,col:"#0e9f6e"},
+    {name:"Perplexity Sonar Pro",tier:"api",c:35.1,l:58.6,o:78.7,t:76.0,n:28.0,col:"#0891b2"},
+    {name:"GPT-5",tier:"api",c:32.9,l:52.4,o:75.6,t:72.0,n:27.0,col:"#2a78d6"},
+    {name:"Perplexity",tier:"gui",c:29.9,l:51.6,o:72.3,t:70.5,n:27.3,col:"#14b8a6"},
+    {name:"Google AI Mode",tier:"gui",c:29.0,l:46.0,o:77.6,t:68.1,n:27.1,col:"#d97706"},
+    {name:"Gemini",tier:"gui",c:28.8,l:58.9,o:76.4,t:72.3,n:26.9,col:"#65a30d"},
+    {name:"ChatGPT",tier:"gui",c:24.6,l:56.6,o:72.7,t:71.4,n:27.6,col:"#dc2626"},
+    {name:"Google AI Overview",tier:"gui",c:22.0,l:46.0,o:75.3,t:70.6,n:26.7,col:"#db2777"}
+  ];
+  var overall={c:30.4,l:54.4,o:75.6,t:70.9};
+  var cmax=Math.max.apply(null,engines.map(function(e){return e.c;}));
+
+  // leaderboard
+  var tb=document.getElementById("lbBody");
+  engines.forEach(function(e){
+    var w=Math.round(e.c/cmax*100);
+    var badge='<span class="badge '+e.tier+'">'+(e.tier==='api'?'[API]':'[GUI]')+'</span>';
+    var bar='<span class="cbar"><span style="position:absolute;right:0;top:50%;transform:translateY(-50%);height:60%;width:'+w+'%;max-width:100%;background:color-mix(in srgb, var(--teal) 22%, transparent);border-radius:3px;z-index:0"></span><span style="position:relative;z-index:1">'+e.c.toFixed(1)+'</span></span>';
+    tb.insertAdjacentHTML("beforeend","<tr><td>"+e.name+badge+"</td><td class='n'>"+bar+"</td><td class='n'>"+e.l.toFixed(1)+"</td><td class='n'>"+e.o.toFixed(1)+"</td><td class='n'>"+e.t.toFixed(1)+"</td><td class='n'>"+e.n.toFixed(1)+"</td></tr>");
+  });
+  tb.insertAdjacentHTML("beforeend","<tr class='total'><td>Overall</td><td class='n'>"+overall.c.toFixed(1)+"</td><td class='n'>"+overall.l.toFixed(1)+"</td><td class='n'>"+overall.o.toFixed(1)+"</td><td class='n'>"+overall.t.toFixed(1)+"</td><td class='n'>—</td></tr>");
+
+  // heatmap (topics as rows, engines as columns)
+  var engs=[
+    ["Claude 4.5 Haiku","api",35.8],
+    ["Gemini 3 Flash","api",35.2],
+    ["Perplexity Sonar Pro","api",35.1],
+    ["GPT-5","api",32.9],
+    ["Perplexity","gui",29.9],
+    ["Google AI Mode","gui",29.0],
+    ["Gemini","gui",28.8],
+    ["ChatGPT","gui",24.6],
+    ["Google AI Overview","gui",22.0]
+  ];
+  var topicRows=[
+    ["Automatic",[30,32.6,40.5,32,30.2,30.7,29.7,25.3,25.6],30.7],
+    ["Bean-to-cup",[100,36.6,32.1,28,31.1,19.4,23.4,22.5,16.9],34.4],
+    ["Auto + grinder",[22.3,29.6,33.3,36.2,31.3,23.8,24.6,24.9,18.7],27.2],
+    ["Latte (home)",[26,29.4,31.6,25.1,27.2,27.4,26.7,16.9,22.2],25.8],
+    ["Drip",[29.4,32.9,40.2,39.9,27.7,30.5,33.2,25.3,30.3],32.2],
+    ["Espresso <$500",[22.7,41.7,32,30.7,30.8,30.1,34.9,27.2,22.1],30.2],
+    ["Manual espresso",[20.1,43.9,36.3,38.1,30.8,41.4,29.1,30.3,18.3],32.0]
+  ];
+  function hcol(v){var t=Math.max(0,Math.min(1,(v-15)/(40-15)));var L=[224,240,237],D=[15,90,80];var c=L.map(function(l,i){return Math.round(l+(D[i]-l)*t);});return{bg:'rgb('+c[0]+','+c[1]+','+c[2]+')',fg:t>0.55?'#eafaf6':'#0b3d37'};}
+  var h='<table style="border-collapse:separate;border-spacing:3px;font-size:12px;font-variant-numeric:tabular-nums;table-layout:fixed;width:838px;min-width:838px">';
+  h+='<colgroup><col style="width:130px">';
+  engs.forEach(function(){h+='<col style="width:70px">';});
+  h+='<col style="width:58px"></colgroup>';
+  h+='<thead><tr><th style="text-align:left;vertical-align:bottom;color:var(--muted);font-weight:500;padding:4px 8px">Topic</th>';
+  engs.forEach(function(e){var bd='<span class="badge '+e[1]+'">'+(e[1]==='api'?'[API]':'[GUI]')+'</span>';h+='<th style="vertical-align:bottom;height:64px;white-space:normal;padding:5px 3px;font-weight:500;font-size:11px;line-height:1.15;color:var(--muted)"><span style="display:block;margin-bottom:3px">'+e[0]+'</span>'+bd+'</th>';});
+  h+='<th style="vertical-align:bottom;padding:4px 4px;font-weight:600">Avg</th></tr></thead><tbody>';
+  topicRows.forEach(function(r){
+    h+='<tr><td style="text-align:left;padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r[0]+'</td>';
+    r[1].forEach(function(v){var c=hcol(v);h+='<td style="background:'+c.bg+';color:'+c.fg+';text-align:center;padding:8px 2px;border-radius:4px">'+Math.round(v)+'</td>';});
+    var ca=hcol(r[2]);h+='<td style="background:'+ca.bg+';color:'+ca.fg+';text-align:center;padding:8px 2px;border-radius:4px;font-weight:600">'+Math.round(r[2])+'</td></tr>';
+  });
+  h+='<tr><td style="text-align:left;padding:6px 8px;color:var(--muted);font-size:11px">Engine avg</td>';
+  engs.forEach(function(e){h+='<td style="text-align:center;padding:4px 2px;color:var(--muted);font-size:11px">'+Math.round(e[2])+'</td>';});
+  h+='<td></td></tr></tbody></table>';
+  document.getElementById("hm").innerHTML=h;
+
+  // convergence
+  var series=[
+    ["Claude 4.5 Haiku","api","#7c3aed",[40.8,43.2,38.4,39.1,38.4,39,39.9,39.1,38.4,38.3,38.8,38.2,37.8,37.8,37.7,37.5,37.5,36.7,36.5,36.6,36,35.8,35.8,35.9,36]],
+    ["Gemini 3 Flash","api","#0e9f6e",[36.8,36.7,37.1,37.1,37.4,37.2,36.6,36.2,35.8,36.4,35.9,35.8,35.9,35.9,35.8,35.4,35.1,35,35.1,35.2,35.3,35.6,35.4,35.2,35.1]],
+    ["Perplexity Sonar Pro","api","#0891b2",[36.9,33.7,35.4,36.3,37,35.9,36.3,36.9,37.6,36.9,36.7,36.1,35.5,35.5,35.1,34.9,35.1,35.3,35.4,35.7,35.5,35.7,35.6,35.4,35.4]],
+    ["GPT-5","api","#2a78d6",[25.6,28,29.5,30.7,31.2,31.2,31.3,31.1,31.6,31.2,31.1,31.5,31.8,31.6,31.7,32,32.1,32.3,32.4,32.4,32.3,32.6,32.7,32.7,32.9]],
+    ["Perplexity","gui","#14b8a6",[28.2,30.3,31.7,31.1,30.4,30.5,29.8,30,29.4,29.6,29.7,30,29.6,29.8,29.7,29.8,30,30.1,30.2,30.3,30,29.6,29.5,29.6,29.5]],
+    ["Google AI Mode","gui","#d97706",[36.3,33.7,33.1,31.6,31.1,30.3,30.2,29.3,28.5,28.3,28.6,28.1,27.2,26.9,27.1,27,27.1,27.5,27.6,27.9,27.8,28,28.4,28.6,28.8]],
+    ["Gemini","gui","#65a30d",[30,29,29.6,30.2,29.2,28.6,29,28.8,29,28.7,29.1,28.9,28.8,28.9,28.8,29,29.3,29.6,29.6,29.5,29.5,29,28.9,28.9,28.9]],
+    ["ChatGPT","gui","#dc2626",[19.9,17.1,20.2,20.5,20.2,21,21.5,22,22.3,22.6,22.1,22.6,22.6,22.4,22.7,22.6,23,23,23.1,23.1,23.3,23.8,24,24.2,24.5]],
+    ["Google AI Overview","gui","#db2777",[15,19.7,19.2,21.1,21.5,22.3,23,21.2,21.5,21.9,21.4,21.5,21.6,22,22,21.9,21.6,21.8,21.6,21.6,21.7,21.7,21.6,21.8,21.9]]
+  ];
+  var NS="http://www.w3.org/2000/svg",svg=document.getElementById("cv");
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function tx(x,y,s,a){var t=el("text",Object.assign({x:x,y:y},a));t.textContent=s;return t;}
+  var W=1000,H=440,pL=48,pR=16,pT=16,pB=44,ph=H-pT-pB,pw=W-pL-pR,kMin=2,kMax=26,yMin=14,yMax=44;
+  var cs=getComputedStyle(document.documentElement),muted=(cs.getPropertyValue('--muted')||'#888').trim(),line=(cs.getPropertyValue('--line')||'#ddd').trim();
+  function X(k){return pL+(k-kMin)/(kMax-kMin)*pw;} function Y(v){return pT+ph-(v-yMin)/(yMax-yMin)*ph;}
+  [15,20,25,30,35,40].forEach(function(g){var y=Y(g);svg.appendChild(el("line",{x1:pL,y1:y,x2:pL+pw,y2:y,stroke:line,"stroke-width":1}));svg.appendChild(tx(pL-8,y+4,g+"%",{"text-anchor":"end",fill:muted,"font-size":"12","font-family":"var(--mono)"}));});
+  [2,5,10,15,20,26].forEach(function(k){svg.appendChild(tx(X(k),H-20,k,{"text-anchor":"middle",fill:muted,"font-size":"12","font-family":"var(--mono)"}));});
+  svg.appendChild(tx(pL+pw/2,H-4,"number of runs (first k executions)",{"text-anchor":"middle",fill:muted,"font-size":"12"}));
+  series.forEach(function(s){
+    var pts=s[3].map(function(v,i){return [X(kMin+i),Y(v)];});
+    var at={d:"M"+pts.map(function(p){return p[0]+" "+p[1];}).join(" L"),fill:"none",stroke:s[2],"stroke-width":2.2,"stroke-linejoin":"round","stroke-linecap":"round"};
+    if(s[1]==='gui') at["stroke-dasharray"]="6 4";
+    svg.appendChild(el("path",at));
+    var last=pts[pts.length-1];svg.appendChild(el("circle",{cx:last[0],cy:last[1],r:3,fill:s[2]}));
+  });
+  var lg=document.getElementById("cvLegend");
+  series.forEach(function(s){var sp=document.createElement("span");var i=document.createElement("i");i.className=s[1]==='gui'?'dash':'';i.style.borderTopColor=s[2];sp.appendChild(i);sp.appendChild(document.createTextNode(s[0]+(s[1]==='api'?' [API]':' [GUI]')));lg.appendChild(sp);});
+
+  var rm=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(!rm && "IntersectionObserver" in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.1});document.querySelectorAll(".reveal").forEach(function(n){io.observe(n);});}
+  else document.querySelectorAll(".reveal").forEach(function(n){n.classList.add("in");});
+})();
+</script>
+</body>
+</html>

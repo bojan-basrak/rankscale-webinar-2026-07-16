@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP vs. API for AI brand-visibility data — a Rankscale field comparison</title>
+  <link rel="stylesheet" href="assets/base.css">
+  <style>
+    /* ---- page-specific: MCP vs API ---- */
+    header.masthead{padding:64px 0 48px;background:
+      radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--mcp) 7%, transparent), transparent 60%),
+      radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--api) 7%, transparent), transparent 60%);}
+    .legendchips{display:flex;gap:16px;margin:22px 0 0;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.8rem;font-weight:500}
+    .chip .sw{width:13px;height:13px;border-radius:3px;display:inline-block}
+    .sw.mcp{background:var(--mcp)} .sw.api{background:var(--api)}
+    .split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:1.5rem 0}
+    .split .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+    .split .card.mcp{border-top:3px solid var(--mcp)} .split .card.api{border-top:3px solid var(--api)}
+    .split .card h3{font-family:var(--mono);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:.6rem}
+    .split ul{margin:0;padding-left:1.1rem} .split li{margin:.3rem 0;font-size:.95rem;color:var(--muted)}
+    @media(max-width:620px){.split{grid-template-columns:1fr}}
+    .statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:1.4rem 0}
+    .stat{background:var(--surface-2);border-radius:12px;padding:14px 16px}
+    .stat .lab{font-size:.74rem;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em}
+    .stat .val{font-family:var(--serif);font-size:1.9rem;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px}
+    .stat .val.mcp{color:var(--mcp)} .stat .val.api{color:var(--api)}
+    .stat .sub{font-size:.78rem;color:var(--faint);margin-top:2px}
+    .cs-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+    .cs-num{font-family:var(--mono);font-size:.8rem;color:var(--api);border:1px solid var(--line);border-radius:8px;padding:3px 9px}
+    .winner{display:inline-block;font-family:var(--mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;padding:3px 9px;border-radius:999px}
+    .winner.mcp{background:var(--mcp-soft);color:var(--mcp)} .winner.api{background:var(--api-soft);color:var(--api)}
+    .chart-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+    .chart-legend span{display:inline-flex;align-items:center;gap:6px}
+    .chart-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+    .yes{color:var(--good);font-weight:600} .no{color:var(--faint)}
+    td .mcpw{color:var(--mcp);font-weight:600} td .apiw{color:var(--api);font-weight:600}
+  </style>
+</head>
+<body>
+
+<nav class="sitenav" aria-label="Webinar sections">
+  <div class="inner">
+    <a class="brand" href="index.html">Rankscale × Claude Code</a>
+    <a href="index.html">Overview</a>
+    <a href="mcp-vs-api.html" aria-current="page">📊 MCP vs API</a>
+    <a href="ai-engine-consistency.html">🎯 AI Consistency</a>
+  </div>
+</nav>
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Field comparison &middot; AI brand-visibility tooling</p>
+    <h1>Two doors into the same data: MCP vs. REST API</h1>
+    <p class="dek">A hands-on comparison of the two ways to pull AI brand-visibility metrics out of Rankscale &mdash; a purpose-built MCP server and the raw REST API &mdash; measured on capability, correctness, and the metric that quietly decides cost at scale: token usage.</p>
+    <div class="meta">
+      <span>Subject: Rankscale</span>
+      <span>Brand under test: De'Longhi (US)</span>
+      <span>Method: paired sub-agents, identical model</span>
+      <span>Updated 2026-07-13</span>
+    </div>
+    <div class="legendchips">
+      <span class="chip"><i class="sw mcp"></i>MCP &mdash; the connector</span>
+      <span class="chip"><i class="sw api"></i>REST API &mdash; the skill</span>
+    </div>
+  </div>
+</header>
+
+<section id="findings">
+  <div class="wrap">
+    <p class="eyebrow">Key findings</p>
+    <h2>The short version</h2>
+    <p class="lead">Both surfaces read the same underlying data and produce the same answers. The real decision is about <em>shape of work</em> and <em>token cost</em> &mdash; and there the two swap places depending on how much data you touch.</p>
+  </div>
+  <div class="wide">
+    <div class="findgrid reveal">
+      <div class="find hero">
+        <span class="k">The headline</span>
+        <h3>Token efficiency crosses over with payload size</h3>
+        <p>For a single narrow metric, the MCP is markedly leaner (~40k vs ~56k tokens). For a broad pull across many topics and competitors, the REST API wins by roughly 2&times; (~65k vs ~128k tokens). There is no universal winner &mdash; there is a break-even point, and it sits at how much data the task drags into context.</p>
+      </div>
+      <div class="find">
+        <span class="k">Correctness</span>
+        <h3>Same data, same answers</h3>
+        <p>Where scopes match, both surfaces return identical visibility values and identical brand ranks. Divergences appeared only in the deep long tail, from competitor-pool size &mdash; not from either tool being wrong.</p>
+      </div>
+      <div class="find">
+        <span class="k">Capability</span>
+        <h3>The asymmetry is writes vs. reach</h3>
+        <p>Only the API can write (manage terms, spend credits, run prompts), read raw AI answer text, and hit arbitrary date windows. Only the MCP exposes shopping, per-term sources, and saved dashboard views as first-class reads.</p>
+      </div>
+      <div class="find">
+        <span class="k">Gotcha</span>
+        <h3>&ldquo;Brand rank&rdquo; is never handed to you</h3>
+        <p>Neither surface returns a ready rank. The MCP even has an <code>own_brand_rank</code> field that is <strong>always 1</strong> &mdash; a display artifact, not a ranking. Rank must be computed from visibility, or you will silently report a brand as #1 everywhere.</p>
+      </div>
+      <div class="find">
+        <span class="k">Identity</span>
+        <h3>The two doors can open different rooms</h3>
+        <p>The MCP connector and the REST key authenticate independently. In testing they resolved to different workspaces &mdash; a key that works for one brand can be blind to another. Confirm which account each surface is bound to before trusting a blank result.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="approaches">
+  <div class="wrap">
+    <p class="eyebrow">Background</p>
+    <h2>Two ways to reach the same numbers</h2>
+    <p>Rankscale tracks how brands surface inside AI assistants &mdash; it feeds tracked prompts to ChatGPT, Gemini, Claude, Perplexity and others, then scores how often, where, and how favourably each brand is mentioned. Analysts pull that data out for reporting in one of two ways.</p>
+    <div class="split">
+      <div class="card mcp">
+        <h3>The MCP connector</h3>
+        <p style="margin:0;color:var(--muted);font-size:.96rem">A set of read-only tools an AI agent can call directly. Responses are pre-digested, capped, and safety-wrapped. Tool schemas load on demand, so the ramp-up cost is tiny &mdash; but every response lands straight in the model's context.</p>
+      </div>
+      <div class="card api">
+        <h3>The REST API (via a skill)</h3>
+        <p style="margin:0;color:var(--muted);font-size:.96rem">Raw HTTP endpoints called with <code>curl</code>. Full read <em>and write</em>. Responses are large and monolithic, but the agent writes them to disk and extracts only what it needs &mdash; keeping bulk payloads out of context at the cost of a heavier instruction set to learn first.</p>
+      </div>
+    </div>
+    <p>For an SEO reader, the practical translation: the MCP is the quick-question tool that an assistant reaches for mid-conversation; the API is the reporting pipe you build a dashboard or a bulk export on. The rest of this document shows exactly where each pays off.</p>
+  </div>
+</section>
+
+<section id="capability">
+  <div class="wrap">
+    <p class="eyebrow">Detailed breakdown &middot; 01</p>
+    <h2>What each surface can actually do</h2>
+    <p>Both cover the core reporting surface &mdash; visibility, sentiment, citations, competitor comparison, filtering by topic / engine / query. The differences live at the edges, and the edges are where tool choice is forced.</p>
+  </div>
+  <div class="wide">
+    <div class="tablewrap reveal">
+      <table>
+        <caption>Capability matrix &mdash; as implemented</caption>
+        <thead><tr><th>Capability</th><th style="text-align:center">MCP</th><th style="text-align:center">REST API</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlead">Core metrics + time series (visibility, sentiment, citations, position, detection)</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Competitor leaderboard + per-competitor series</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Filters: topic / tag / engine / query</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Arbitrary custom date ranges (ISO start/end)</td><td style="text-align:center" class="no">preset only</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Raw AI answer text (&ldquo;what did the model actually say&rdquo;)</td><td style="text-align:center" class="no">&mdash;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Shopping analytics (products, providers, buybox, price)</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="no">&mdash;</td></tr>
+          <tr><td class="rowlead">Per-term source-domain visibility (which sites the AI pulls from)</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="no">&mdash;</td></tr>
+          <tr><td class="rowlead">Saved custom dashboard views</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="no">&mdash;</td></tr>
+          <tr><td class="rowlead">Execution listing with time bounds + cursor pagination</td><td style="text-align:center" class="yes">&check;</td><td style="text-align:center" class="no">partial</td></tr>
+          <tr><td class="rowlead">Credits &amp; runway balance</td><td style="text-align:center" class="no">&mdash;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Create / update / delete brands, topics, search terms</td><td style="text-align:center" class="no">&mdash;</td><td style="text-align:center" class="yes">&check;</td></tr>
+          <tr><td class="rowlead">Activate / deactivate / run a search term (spends credits)</td><td style="text-align:center" class="no">&mdash;</td><td style="text-align:center" class="yes">&check;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="split">
+      <div class="card mcp">
+        <h3>Only the MCP</h3>
+        <ul>
+          <li>Shopping intelligence &mdash; product/provider/buybox signals</li>
+          <li>Per-term source-domain visibility with an owned-domain flag</li>
+          <li>Saved dashboard-view configs</li>
+          <li>Clean execution listing (<code>since</code>/<code>until</code>) + built-in pagination</li>
+          <li>Single-object fetches by ID</li>
+        </ul>
+      </div>
+      <div class="card api">
+        <h3>Only the REST API</h3>
+        <ul>
+          <li>Every write &mdash; manage brands, topics, terms; activate; run-now</li>
+          <li>Credits &amp; runway monitoring</li>
+          <li>Raw AI answer text per execution</li>
+          <li>Arbitrary ISO date windows</li>
+          <li>One monolithic report bundling own-brand + competitors + per-topic + per-engine series</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tokens">
+  <div class="wrap">
+    <p class="eyebrow">Detailed breakdown &middot; 02</p>
+    <h2>The token model &mdash; why the winner flips</h2>
+    <p>Token usage is governed by two costs pulling in opposite directions: a fixed <strong>ramp cost</strong> to make the surface usable, and a variable <strong>payload cost</strong> for the data itself.</p>
+    <p>The MCP's ramp is tiny &mdash; a single tool schema (~2.75k characters) loads on demand. But its responses land <em>directly in context</em>: every capped, safety-wrapped payload is tokens the model must read. The REST API inverts both. Its ramp is heavy &mdash; the agent must read ~24k characters of endpoint and quirk documentation before the first call &mdash; but a disciplined agent writes raw responses to disk and pulls only the extracted values into context. Bulk data costs almost nothing.</p>
+    <p>So the arithmetic is simple. When the payload is small, the API's documentation tax dominates and the MCP wins. When the payload is large, the API's file-first pattern keeps hundreds of kilobytes off-context while the MCP is forced to stream all of it in &mdash; and the API wins, often by a wide margin.</p>
+  </div>
+  <div class="wide">
+    <figure class="reveal">
+      <p class="eyebrow" style="margin-bottom:10px">Subagent tokens per task (thousands)</p>
+      <div class="chart-legend"><span><i style="background:var(--mcp)"></i>MCP</span><span><i style="background:var(--api)"></i>REST API</span></div>
+      <div class="sr-only">In case study 1, a single narrow metric pull, the MCP used 39,500 tokens and the API used 55,878 &mdash; the MCP was leaner. In case study 2, a broad pull across seven topics, the MCP used 127,575 tokens and the API used 65,310 &mdash; the API was leaner by nearly two to one. The winner flips as payload grows.</div>
+      <svg id="tokChart" viewBox="0 0 1000 420" role="img" aria-label="Grouped bar chart of subagent tokens per task, showing the MCP cheaper on the narrow task and the API cheaper on the broad task"></svg>
+      <figcaption>The crossover in one picture. On a single-metric pull the MCP is ~29% cheaper; on a seven-topic pull with competitor series the API is ~49% cheaper. Same two tools, opposite verdicts &mdash; the deciding variable is how much data the task moves.</figcaption>
+    </figure>
+  </div>
+  <div class="wrap">
+    <div class="callout">
+      <span class="k">Rule of thumb</span>
+      <p>Reach for the <strong style="color:var(--mcp)">MCP</strong> for narrow, interactive, read-only questions. Reach for the <strong style="color:var(--api)">REST API</strong> for bulk pulls, full-history exports, raw-text analysis, or anything that writes. The break-even is roughly the point where a task's data payload would exceed the API's ~24k-character documentation ramp &mdash; a threshold a single multi-section report clears easily.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cs1">
+  <div class="wrap">
+    <div class="cs-head"><span class="cs-num">Case study 1</span><h2 style="margin:0">One metric, one brand</h2><span class="winner mcp">MCP leaner</span></div>
+    <p style="margin-top:1rem"><strong>The task.</strong> Pull the visibility metric for De'Longhi (US) over the last 90 days, aggregated weekly, and chart it. A deliberately narrow ask &mdash; the kind an analyst fires off mid-conversation.</p>
+    <div class="statrow">
+      <div class="stat"><div class="lab">MCP tokens</div><div class="val mcp">39.5k</div><div class="sub">2 round-trips</div></div>
+      <div class="stat"><div class="lab">API tokens</div><div class="val api">55.9k</div><div class="sub">7 round-trips</div></div>
+      <div class="stat"><div class="lab">MCP into context</div><div class="val mcp" style="font-size:1.5rem">~4.0k<span style="font-size:.9rem;color:var(--faint)"> ch</span></div><div class="sub">0 KB to disk</div></div>
+      <div class="stat"><div class="lab">API into context</div><div class="val api" style="font-size:1.5rem">~25k<span style="font-size:.9rem;color:var(--faint)"> ch</span></div><div class="sub">~104 KB to disk</div></div>
+    </div>
+    <p><strong>What happened.</strong> The MCP answered in a single call. The API answered too &mdash; but ~24k of its ~25k context characters were the documentation it had to read first. For five weekly data points, that ramp never pays for itself: the MCP came in ~29% cheaper.</p>
+    <p><strong>Where they differed on capability.</strong> The MCP has no custom date range &mdash; only fixed presets &mdash; so its &ldquo;90 days&rdquo; was really the <code>3m</code> preset. The API honoured an exact ISO window (and correctly handled the exclusive end-date quirk). Both agreed on the values wherever the windows lined up; the divergence was purely the API's finer window control.</p>
+    <div class="callout warn">
+      <span class="k">Two findings that outranked the token score</span>
+      <p><strong>Identity:</strong> the first API attempt failed outright &mdash; its key resolved to a different workspace that couldn't see the brand. The MCP could. Same brand name, different door. <br><strong>Data reality:</strong> the requested 90 days is unfulfillable by <em>either</em> tool &mdash; tracking only began in late May, leaving a genuine ~41-day front gap. Neither tool can invent history that was never recorded.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cs2">
+  <div class="wrap">
+    <div class="cs-head"><span class="cs-num">Case study 2</span><h2 style="margin:0">Seven topics, rank over time</h2><span class="winner api">API leaner</span></div>
+    <p style="margin-top:1rem"><strong>The task.</strong> For all seven of De'Longhi's topics, pull the Visibility Index and compute Brand Rank (position among all detected brands by visibility) over 30 days, daily &mdash; then deliver an aggregated table and a rank-over-time chart. A realistic reporting job, using the <code>30d</code> preset that both surfaces support identically for a fair fight.</p>
+    <div class="statrow">
+      <div class="stat"><div class="lab">MCP tokens</div><div class="val mcp">127.6k</div><div class="sub">9 calls &middot; 3 round-trips</div></div>
+      <div class="stat"><div class="lab">API tokens</div><div class="val api">65.3k</div><div class="sub">13 calls &middot; 8 API round-trips</div></div>
+      <div class="stat"><div class="lab">MCP into context</div><div class="val mcp" style="font-size:1.5rem">~75k<span style="font-size:.9rem;color:var(--faint)"> ch</span></div><div class="sub">0 KB to disk</div></div>
+      <div class="stat"><div class="lab">API into context</div><div class="val api" style="font-size:1.5rem">~31k<span style="font-size:.9rem;color:var(--faint)"> ch</span></div><div class="sub">~325 KB to disk</div></div>
+    </div>
+    <p><strong>What happened.</strong> Seven rich competitor payloads. The MCP streamed all of them into context (~65k characters of data alone) and spent ~128k tokens. The API wrote ~325 KB of raw report JSON to disk and pulled only ~8k characters of extracted values through &mdash; finishing on ~65k tokens, <strong>roughly half</strong>. The doc ramp that sank the API in Case study 1 was dwarfed by the data it kept out of context here. The one place the MCP led: fewer network round-trips (it fired all seven topic calls in parallel).</p>
+  </div>
+  <div class="wide">
+    <div class="tablewrap reveal">
+      <table>
+        <caption>De'Longhi (US) &mdash; Brand Rank &amp; Visibility Index, 30-day window (both surfaces agree)</caption>
+        <thead><tr><th>Topic</th><th class="n">Brand Rank</th><th class="n">Visibility Index</th></tr></thead>
+        <tbody>
+          <tr><td class="rowlead">automatic coffee machines</td><td class="n"><span class="mcpw">1</span></td><td class="n">91.1</td></tr>
+          <tr><td class="rowlead">best automatic latte machine for home</td><td class="n"><span class="mcpw">1</span></td><td class="n">87.4</td></tr>
+          <tr><td class="rowlead">best automatic coffee machines with grinder</td><td class="n"><span class="mcpw">1</span></td><td class="n">84.6</td></tr>
+          <tr><td class="rowlead">bean to cup coffee machines</td><td class="n"><span class="mcpw">1</span></td><td class="n">82.7</td></tr>
+          <tr><td class="rowlead">best espresso machine under 500</td><td class="n">3</td><td class="n">42.8</td></tr>
+          <tr><td class="rowlead">manual espresso machines</td><td class="n">22</td><td class="n">3.9</td></tr>
+          <tr><td class="rowlead">best drip coffee maker</td><td class="n">22&ndash;23</td><td class="n">1.7</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="wide">
+    <figure class="reveal">
+      <p class="eyebrow" style="margin-bottom:10px">Brand Rank over time by topic &middot; 30d daily (rank 1 = best)</p>
+      <div class="chart-legend" id="rankLegend"></div>
+      <div class="sr-only">Line chart of daily brand rank for seven topics. Four topics &mdash; automatic machines, auto latte, grinder, and bean-to-cup &mdash; sit between rank 1 and 3 and converge to rank 1 through July. Espresso-under-500 holds a flat rank 3. Manual espresso and drip coffee sit deep at rank 18 to 23. Every line breaks across a 19-day tracking gap between June 17 and July 7.</div>
+      <svg id="rankChart" viewBox="0 0 1000 460" role="img" aria-label="Daily brand rank by topic; leaders cluster at rank 1 to 3, laggards at 18 to 23, with a tracking gap in late June"></svg>
+      <figcaption>De'Longhi is a category leader (rank 1&ndash;3) in the four automatic/bean-to-cup topics and mid-pack on &ldquo;espresso under $500,&rdquo; but a deep long-tail player in the two manual-brew topics where enthusiast brands dominate. The break in every line is a genuine 19-day gap in tracking (Jun 18&ndash;Jul 6) &mdash; left un-interpolated, as sporadic tracking should be.</figcaption>
+    </figure>
+  </div>
+  <div class="wrap">
+    <div class="callout warn">
+      <span class="k">Three traps both surfaces share</span>
+      <p><strong>No rank field.</strong> Rank is always a client-side computation from visibility. The MCP's <code>own_brand_rank</code> returns 1 for every topic &mdash; it pins the own brand to the top of the leaderboard for display. Trust it blindly and you would report De'Longhi as #1 in all seven topics; it is actually #1 in only four.<br>
+      <strong>Aggregate rank &ne; daily rank.</strong> A topic can be aggregate rank 1 yet daily rank 2 on most days, because the aggregate is period-weighted share-of-voice, not an average of daily positions.<br>
+      <strong>Truncation &amp; pool size.</strong> The MCP caps competitor leaderboards at the top 25; the true pools run 44&ndash;84 brands. This is what caused the only real disagreement &mdash; a one-position wobble in the low-visibility long tail.</p>
+    </div>
+  </div>
+</section>
+
+<section id="guidance">
+  <div class="wrap">
+    <p class="eyebrow">Practical guidance</p>
+    <h2>Which door to open</h2>
+    <div class="split">
+      <div class="card mcp">
+        <h3>Choose the MCP when</h3>
+        <ul>
+          <li>You are asking a narrow, read-only question interactively</li>
+          <li>You want shopping, per-term sources, or a saved dashboard view</li>
+          <li>You value fewer round-trips and no shell scaffolding</li>
+          <li>The answer is a handful of numbers, not a full export</li>
+        </ul>
+      </div>
+      <div class="card api">
+        <h3>Choose the REST API when</h3>
+        <ul>
+          <li>You are pulling many topics/competitors or full history</li>
+          <li>You need an exact custom date window or raw answer text</li>
+          <li>You need to write &mdash; manage terms, run prompts, watch credits</li>
+          <li>You will re-analyse the same large dataset repeatedly (write once, extract many)</li>
+        </ul>
+      </div>
+    </div>
+    <p>They are complements, not rivals. A mature workflow uses the MCP for exploration and quick reads, and the API for scheduled exports, bulk analysis, and any change to the workspace.</p>
+  </div>
+</section>
+
+<section id="method">
+  <div class="wrap">
+    <p class="eyebrow">Methodology &amp; caveats</p>
+    <h2>How this was measured &mdash; and its limits</h2>
+    <p>Each task was run by a pair of AI sub-agents with identical model and settings, differing only in the surface they were permitted to use. Token counts, tool calls, and context volume are the harness's own accounting; context-character figures are the agents' self-reported ledgers and are approximate.</p>
+    <p>Honest limits worth stating plainly: this is <strong>one brand with sporadic, sub-three-month tracking</strong> &mdash; not a broad benchmark. The absolute token numbers reflect this agent harness and would shift under a different one; the <em>direction</em> of the crossover is the durable finding, not the exact figures. The REST API's token advantage on bulk pulls depends on an agent actually following the file-first discipline &mdash; a naive integration that reads full payloads into context would forfeit it. And both surfaces were exercised as implemented today; capability gaps (for example, the API skill not exposing shopping data) reflect current coverage, not permanent limits.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p style="margin:0">Rankscale MCP vs. REST API &mdash; field comparison. Figures from paired sub-agent runs on De'Longhi (US), 2026-07-13. Prepared for SEO and AI-visibility analysts; numbers are reproducible against the same workspace and window.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var css=getComputedStyle(document.documentElement);
+  function v(n){return css.getPropertyValue(n).trim();}
+  var SVGNS="http://www.w3.org/2000/svg";
+  function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function txt(x,y,s,a){var t=el("text",Object.assign({x:x,y:y},a));t.textContent=s;return t;}
+
+  /* ---- token grouped bar chart ---- */
+  (function(){
+    var svg=document.getElementById("tokChart");if(!svg)return;
+    var W=1000,H=420,padL=64,padR=24,padT=20,padB=64;
+    var plotH=H-padT-padB, plotW=W-padL-padR;
+    var groups=[{name:"Case 1 — one metric, one brand",mcp:39.5,api:55.9},{name:"Case 2 — seven topics, rank over time",mcp:127.6,api:65.3}];
+    var max=140;
+    var muted=v("--muted"),line=v("--line"),mcp=v("--mcp"),api=v("--api");
+    function Y(val){return padT+plotH-(val/max)*plotH;}
+    [0,35,70,105,140].forEach(function(g){
+      var y=Y(g);
+      svg.appendChild(el("line",{x1:padL,y1:y,x2:W-padR,y2:y,stroke:line,"stroke-width":1}));
+      svg.appendChild(txt(padL-10,y+4,g+"k",{"text-anchor":"end",fill:muted,"font-size":"13","font-family":"var(--mono)"}));
+    });
+    var gw=plotW/groups.length;
+    groups.forEach(function(gr,i){
+      var cx=padL+gw*i+gw/2;
+      var bw=64, gap=26;
+      var pairs=[{val:gr.mcp,c:mcp,lab:"MCP"},{val:gr.api,c:api,lab:"API"}];
+      pairs.forEach(function(p,j){
+        var x=cx-(bw+gap/2)+j*(bw+gap);
+        var y=Y(p.val), h=padT+plotH-y;
+        var r=el("rect",{x:x,y:padT+plotH,width:bw,height:0,rx:5,fill:p.c,opacity:.92});
+        svg.appendChild(r);
+        (function(rr,ty,hh){requestAnimationFrame(function(){rr.style.transition="y .8s ease, height .8s ease";rr.setAttribute("y",ty);rr.setAttribute("height",hh);});})(r,y,h);
+        svg.appendChild(txt(x+bw/2,y-10,p.val.toFixed(1)+"k",{"text-anchor":"middle",fill:p.c,"font-size":"15","font-weight":"600","font-family":"var(--mono)"}));
+        svg.appendChild(txt(x+bw/2,padT+plotH+20,p.lab,{"text-anchor":"middle",fill:muted,"font-size":"12","font-family":"var(--mono)"}));
+      });
+      svg.appendChild(txt(cx,H-16,gr.name,{"text-anchor":"middle",fill:v("--ink"),"font-size":"14"}));
+    });
+  })();
+
+  /* ---- rank over time line chart ---- */
+  (function(){
+    var svg=document.getElementById("rankChart");if(!svg)return;
+    var W=1000,H=460,padL=48,padR=150,padT=18,padB=52;
+    var plotH=H-padT-padB, plotW=W-padL-padR;
+    var labels=["Jun 13","Jun 14","Jun 15","Jun 16","Jun 17","","Jul 7","Jul 8","Jul 9","Jul 10","Jul 11","Jul 12"];
+    var N=labels.length, rmin=1, rmax=24;
+    var series=[
+      {name:"automatic machines",c:v("--c1"),d:[2,2,2,2,3,null,2,2,2,2,2,1]},
+      {name:"auto latte (home)",c:v("--c2"),d:[3,3,3,3,3,null,1,1,1,1,1,1]},
+      {name:"auto w/ grinder",c:v("--c3"),d:[2,2,2,2,2,null,2,1,2,1,1,1]},
+      {name:"bean to cup",c:v("--c4"),d:[2,2,2,1,1,null,1,1,1,1,1,1]},
+      {name:"espresso under $500",c:v("--c5"),d:[3,3,3,3,3,null,3,3,3,3,3,3]},
+      {name:"manual espresso",c:v("--c6"),d:[19,19,18,19,null,null,19,18,19,20,20,21]},
+      {name:"best drip coffee",c:v("--c7"),d:[18,18,18,18,13,null,17,18,18,20,19,21]}
+    ];
+    var muted=v("--muted"),line=v("--line"),faint=v("--faint");
+    function X(i){return padL+(plotW*(i/(N-1)));}
+    function Y(r){return padT+((r-rmin)/(rmax-rmin))*plotH;}
+    [1,3,5,10,15,20].forEach(function(r){
+      var y=Y(r);
+      svg.appendChild(el("line",{x1:padL,y1:y,x2:padL+plotW,y2:y,stroke:line,"stroke-width":1}));
+      svg.appendChild(txt(padL-8,y+4,"#"+r,{"text-anchor":"end",fill:muted,"font-size":"12","font-family":"var(--mono)"}));
+    });
+    labels.forEach(function(l,i){ if(!l)return;
+      svg.appendChild(txt(X(i),H-30,l,{"text-anchor":"middle",fill:muted,"font-size":"11","font-family":"var(--mono)"}));
+    });
+    /* gap band */
+    var gx1=X(4),gx2=X(6);
+    svg.appendChild(el("rect",{x:(gx1+X(5))/2- (X(5)-gx1)/2,y:padT,width:(gx2-gx1),height:plotH,fill:faint,opacity:.06}));
+    svg.appendChild(txt(X(5),padT+plotH+20,"tracking gap",{"text-anchor":"middle",fill:faint,"font-size":"10.5","font-family":"var(--mono)","font-style":"italic"}));
+    series.forEach(function(s){
+      var seg=[],cur=[];
+      s.d.forEach(function(val,i){ if(val==null){if(cur.length)seg.push(cur);cur=[];}else{cur.push([X(i),Y(val)]);} });
+      if(cur.length)seg.push(cur);
+      seg.forEach(function(pts){
+        if(pts.length>1){
+          var dd="M"+pts.map(function(p){return p[0]+" "+p[1];}).join(" L");
+          svg.appendChild(el("path",{d:dd,fill:"none",stroke:s.c,"stroke-width":2.4,"stroke-linejoin":"round","stroke-linecap":"round"}));
+        }
+        pts.forEach(function(p){ svg.appendChild(el("circle",{cx:p[0],cy:p[1],r:3.2,fill:s.c})); });
+      });
+      /* right-edge label */
+      var last=null; for(var i=s.d.length-1;i>=0;i--){if(s.d[i]!=null){last=[X(i),Y(s.d[i])];break;}}
+      if(last){ svg.appendChild(txt(padL+plotW+8,last[1]+4,s.name,{fill:s.c,"font-size":"11.5","font-weight":"500"})); }
+    });
+    /* legend chips under caption element */
+    var lg=document.getElementById("rankLegend");
+    if(lg){ series.forEach(function(s){ var sp=document.createElement("span"); var i=document.createElement("i"); i.style.background=s.c; sp.appendChild(i); sp.appendChild(document.createTextNode(s.name)); lg.appendChild(sp); }); }
+  })();
+
+  /* ---- reveal on scroll ---- */
+  var rm=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(!rm && "IntersectionObserver" in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12});
+    document.querySelectorAll(".reveal").forEach(function(n){io.observe(n);});
+  } else { document.querySelectorAll(".reveal").forEach(function(n){n.classList.add("in");}); }
+})();
+</script>
+</body>
+</html>
