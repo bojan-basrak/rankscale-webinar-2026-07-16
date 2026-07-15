@@ -15,7 +15,9 @@
         radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--amber) 8%, transparent), transparent 60%);
     }
     .camp{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;
-      text-transform:uppercase;color:var(--teal);background:var(--teal-soft);border-radius:999px;padding:6px 14px;margin:0 0 1.1rem}
+      text-transform:uppercase;color:var(--teal);background:var(--teal-soft);border-radius:999px;padding:6px 14px;margin:0 0 1.1rem;
+      text-decoration:none;transition:background .18s ease}
+    a.camp:hover{background:color-mix(in srgb, var(--teal) 20%, transparent)}
     .masthead h1{font-size:clamp(2rem,4.6vw,2.95rem)}
 
     /* agenda */
@@ -66,7 +68,7 @@
 
 <header class="masthead">
   <div class="wrap">
-    <p class="camp">☀️ Rankscale AI Summer Camp · Session 8</p>
+    <a class="camp" href="https://rankscale.ai/webinar" target="_blank" rel="noopener">☀️ Rankscale AI Summer Camp · Session 8</a>
     <h1>Webinar materials: Using the Rankscale API &amp; MCP</h1>
     <p class="dek">A hands-on session on connecting <strong>Claude Code</strong> to Rankscale — driving the platform through its <strong>REST API</strong> and <strong>MCP</strong> to reproduce the standard charts and build analyses that go beyond the web interface. These pages are the session materials and a lasting reference for attendees.</p>
     <div class="meta">
@@ -172,7 +174,7 @@
 
 <footer>
   <div class="wrap">
-    <p style="margin:0">Rankscale AI Summer Camp ☀️ · Session 8 · Using the Rankscale API &amp; MCP with Claude Code · 16 Jul 2026, 16:00–17:00 CEST.</p>
+    <p style="margin:0"><a href="https://rankscale.ai/webinar" target="_blank" rel="noopener">Rankscale AI Summer Camp</a> ☀️ · Session 8 · Using the Rankscale API &amp; MCP with Claude Code · 16 Jul 2026, 16:00–17:00 CEST.</p>
   </div>
 </footer>
 
