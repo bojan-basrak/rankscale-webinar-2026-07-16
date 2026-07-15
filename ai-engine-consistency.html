@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>How consistent are AI engines? A Rankscale variance study</title>
+  <title>AI engine consistency - a Rankscale variance study</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="assets/base.css">
   <style>
@@ -40,7 +40,7 @@
   <div class="wrap">
     <p class="eyebrow">Rankscale variance study &middot; De'Longhi (US)</p>
     <h1>How consistent are AI engines when they recommend brands?</h1>
-    <p class="dek">If you ask the same question twice, do you get the same brands, in the same order? We measured the run-to-run stability of nine AI engines across 1,722 real executions — and where the wobble actually lives.</p>
+    <p class="dek">We asked nine AI engines the same questions repeatedly - 1,722 executions in total - and measured whether they return the same brands, in the same order. This report shows how stable each engine is and where the variation comes from.</p>
     <div class="meta">
       <span>7 topics &times; 9 engines = 63 cells</span>
       <span>1,722 executions</span>
@@ -52,75 +52,75 @@
 
 <section id="findings">
   <div class="wrap"><p class="eyebrow">Key findings</p><h2>The short version</h2>
-  <p class="lead">Consistency is a headline score for "same answer twice?"; three sub-metrics say <em>in what way</em> an engine varies.</p></div>
+  <p class="lead">One headline score answers "same answer twice?". Three sub-metrics explain <em>in what way</em> an engine varies.</p></div>
   <div class="wide"><div class="findgrid reveal">
-    <div class="find hero"><span class="k">The headline</span><h3>No AI engine is highly consistent — and the churn is in the lineup, not the ranking</h3>
-      <p>Across every engine, the exact set of brands named shifts run-to-run (Lineup Stability ~54%), while the <em>order</em> of the brands that do appear is far steadier (Order Stability ~76%) and the top pick holds ~71% of the time. Being "the answer" once doesn't mean you're the answer next time.</p></div>
-    <div class="find"><span class="k">API vs GUI</span><h3>Structured APIs beat live-web surfaces</h3><p>The four <code>[API]</code> engines occupy the top of the consistency leaderboard; the live-web <code>[GUI]</code> surfaces (Google AI Overview, ChatGPT) sit at the bottom.</p></div>
-    <div class="find"><span class="k">Stabilization</span><h3>Estimates settle by ~10–15 runs</h3><p>Consistency scores wobble for the first few executions, then flatten. ~25 runs per prompt is comfortably enough to trust the number.</p></div>
-    <div class="find"><span class="k">Range</span><h3>Best to worst: 35.8% → 22.0%</h3><p>Claude 4.5 Haiku [API] leads; Google AI Overview [GUI] trails — a 14-point spread in overall Consistency.</p></div>
+    <div class="find hero"><span class="k">The headline</span><h3>No engine is highly consistent, and most of the variation is in which brands appear, not their order</h3>
+      <p>For every engine, the exact set of brands named changes from run to run (Lineup Stability about 54%). The <em>order</em> of the brands that do appear is far steadier (Order Stability about 76%), and the top pick holds about 71% of the time. Appearing once does not mean you appear the next time.</p></div>
+    <div class="find"><span class="k">API vs GUI</span><h3>Provider APIs are more consistent than live-web interfaces</h3><p>The four <code>[API]</code> engines hold the top of the consistency leaderboard; the live-web <code>[GUI]</code> engines (Google AI Overview, ChatGPT) sit at the bottom.</p></div>
+    <div class="find"><span class="k">Stabilization</span><h3>Scores settle by 10-15 runs</h3><p>Consistency scores move around for the first few executions, then flatten. About 25 runs per prompt is enough to trust the number.</p></div>
+    <div class="find"><span class="k">Range</span><h3>Best to worst: 35.8% → 22.0%</h3><p>Claude 4.5 Haiku [API] leads; Google AI Overview [GUI] trails - a 14-point spread in overall Consistency.</p></div>
   </div></div>
 </section>
 
 <section id="method">
-  <div class="wrap"><p class="eyebrow">How we measure it</p><h2>One headline, three diagnoses</h2>
-  <p>The unit is a single prompt run repeatedly on a single engine. We take each execution's answer, extract the ordered list of brands it names (matched against Rankscale's own tracked brand set), and compare those lists across runs. One headline number, three that explain it.</p>
+  <div class="wrap"><p class="eyebrow">How we measure it</p><h2>One headline score, three sub-metrics</h2>
+  <p>The unit is a single prompt run repeatedly on a single engine. For each run we take the answer, extract the ordered list of brands it names (matched against Rankscale's own tracked brand set), and compare those lists across runs. One headline number, plus three that explain it.</p>
   <div class="defs">
-    <div class="def"><span class="tech">RBO, top-weighted</span><h3>Consistency</h3><p>Overall, how repeatable is the answer — weighting the top of the list most? The headline score. Best read comparatively between engines.</p></div>
-    <div class="def"><span class="tech">Jaccard overlap</span><h3>Lineup Stability</h3><p>Does it name the same brands each time?</p></div>
-    <div class="def"><span class="tech">Kendall &tau;, rescaled</span><h3>Order Stability</h3><p>Does it keep those brands in the same order? 50% = no better than random ordering.</p></div>
-    <div class="def"><span class="tech">Modal #1 share</span><h3>Top Pick Stability</h3><p>How often does it name the same brand first — the number brands care about most.</p></div>
+    <div class="def"><span class="tech">RBO, top-weighted</span><h3>Consistency</h3><p>How repeatable the answer is overall, weighting the top of the list most heavily. The headline score. Read it by comparing engines, not against 100%.</p></div>
+    <div class="def"><span class="tech">Jaccard overlap</span><h3>Lineup Stability</h3><p>Whether the engine names the same brands each time.</p></div>
+    <div class="def"><span class="tech">Kendall &tau;, rescaled</span><h3>Order Stability</h3><p>Whether it keeps those brands in the same order. 50% means no better than random ordering.</p></div>
+    <div class="def"><span class="tech">Modal #1 share</span><h3>Top Pick Stability</h3><p>How often it names the same brand first. This is the number brands care about most.</p></div>
   </div></div>
 </section>
 
 <section id="leaderboard">
   <div class="wrap"><p class="eyebrow">Deliverable 1</p><h2>AI Engine leaderboard</h2>
-  <p>Each engine averaged across its 7 topics, sorted by Consistency. <code>[API]</code> = provider API; <code>[GUI]</code> = live browser surface.</p></div>
+  <p>Each engine averaged across its 7 topics, sorted by Consistency. <code>[API]</code> = provider API; <code>[GUI]</code> = live browser interface.</p></div>
   <div class="wide"><div class="tablewrap reveal">
     <table>
       <thead><tr><th>AI Engine</th><th class="n">Consistency</th><th class="n">Lineup</th><th class="n">Order</th><th class="n">Top Pick</th><th class="n">avg runs</th></tr></thead>
       <tbody id="lbBody"></tbody>
     </table>
   </div>
-  <p style="font-size:.9rem;color:var(--muted)">Consistency (RBO) is top-weighted and runs low in absolute terms — compare engines to each other, not to 100%. Lineup / Order / Top Pick are directly interpretable.</p>
+  <p style="font-size:.9rem;color:var(--muted)">Consistency (RBO) is top-weighted and runs low in absolute terms - compare engines to each other, not to 100%. Lineup / Order / Top Pick are directly interpretable.</p>
   </div>
 </section>
 
 <section id="heatmap">
   <div class="wrap"><p class="eyebrow">Deliverable 2</p><h2>Consistency by topic</h2>
-  <p>Every engine &times; topic cell. Darker = more consistent. The averages hide sharp topic effects — some cells are near-perfect, others barely above noise.</p></div>
+  <p>Every engine &times; topic cell. Darker = more consistent. The averages hide strong topic effects: some cells are near-perfect, others barely above noise.</p></div>
   <div class="wide"><figure class="reveal">
     <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap">
       <span>Consistency</span><span style="display:inline-block;width:120px;height:10px;border-radius:3px;background:linear-gradient(90deg,rgb(224,240,237),rgb(15,90,80))"></span><span>15% → 40%+ &nbsp;·&nbsp; rounded to whole %</span></div>
     <div id="hm" style="overflow-x:auto"></div>
-    <figcaption>Claude 4.5 Haiku [API] returns an identical list every run on "bean to cup" (100%) — a topic De'Longhi dominates — yet drops to ~20% on manual espresso. Google AI Overview [GUI] is the most volatile across the board.</figcaption>
+    <figcaption>Claude 4.5 Haiku [API] returns an identical list every run on "bean to cup" (100%) - a topic De'Longhi dominates - yet drops to ~20% on manual espresso. Google AI Overview [GUI] is the most volatile across the board.</figcaption>
   </figure></div>
 </section>
 
 <section id="convergence">
-  <div class="wrap"><p class="eyebrow">Deliverable 3</p><h2>Does consistency stabilize with more runs?</h2>
+  <div class="wrap"><p class="eyebrow">Deliverable 3</p><h2>How many runs a score needs to stabilize</h2>
   <p>Consistency recomputed on the first <em>k</em> executions, for growing <em>k</em>. Solid lines = <code>[API]</code> engines, dashed = <code>[GUI]</code>.</p></div>
   <div class="wide"><figure class="reveal">
     <div class="legend" id="cvLegend"></div>
     <div style="overflow-x:auto"><svg id="cv" viewBox="0 0 1000 440" role="img" aria-label="Consistency versus number of runs for nine engines; curves flatten by 10 to 15 runs. API engines settle highest, GUI engines lowest."></svg></div>
-    <figcaption>Every curve flattens by roughly 10–15 runs — the estimate converges, and the engine ranking is stable from ~k=10 on. Chart capped at k=26, where all nine engines still have all seven topics supporting each point.</figcaption>
+    <figcaption>Every curve flattens by roughly 10-15 runs - the estimate converges, and the engine ranking is stable from ~k=10 on. Chart capped at k=26, where all nine engines still have all seven topics supporting each point.</figcaption>
   </figure></div>
 </section>
 
 <section id="caveats">
-  <div class="wrap"><p class="eyebrow">Method &amp; caveats</p><h2>How to read these numbers responsibly</h2>
+  <div class="wrap"><p class="eyebrow">Method &amp; caveats</p><h2>How to read these numbers</h2>
   <div class="callout"><span class="k">Read with these in mind</span>
   <ul>
     <li><strong>Brands seen through Rankscale.</strong> Extraction is limited to Rankscale's tracked brand set per prompt; brands it doesn't track are invisible, which biases all scores slightly upward.</li>
     <li><strong>Real-world drift is included.</strong> Over ~46 days the market itself shifts, so a little "inconsistency" is the world changing, not the model. Isolating pure model stochasticity would need dense same-day repeat runs.</li>
-    <li><strong>Consistency (RBO) is a comparative scale.</strong> Top-weighted overlap on short lists runs low in absolute terms — use it to rank engines, not as a "70% = good" gauge.</li>
-    <li><strong>Extraction is deterministic string-matching</strong> against Rankscale's alias lists (first-mention order = position), not a language model — fast and reproducible, with minor matching noise.</li>
+    <li><strong>Consistency (RBO) is a comparative scale.</strong> Top-weighted overlap on short lists runs low in absolute terms - use it to rank engines, not as a "70% = good" gauge.</li>
+    <li><strong>Extraction is deterministic string-matching</strong> against Rankscale's alias lists (first-mention order = position), not a language model - fast and reproducible, with minor matching noise.</li>
   </ul></div>
   <p style="font-size:.9rem;color:var(--muted)">Data: De'Longhi (US), pulled once via <code>POST /v1/metrics/search-terms-report</code> (all 63 search terms, answer texts included), analyzed offline. Reproducible against the same workspace.</p>
   </div>
 </section>
 
-<footer><div class="wrap"><p style="margin:0">AI Engine Consistency — a Rankscale variance study on De'Longhi (US). 1,722 executions across 9 engines &times; 7 topics, 2026-07-13. Consistency = Rank-Biased Overlap (p=0.9); Order Stability = rescaled Kendall &tau;; Lineup = Jaccard; Top Pick = modal #1 share.</p></div></footer>
+<footer><div class="wrap"><p style="margin:0">AI Engine Consistency - a Rankscale variance study on De'Longhi (US). 1,722 executions across 9 engines &times; 7 topics, 2026-07-13. Consistency = Rank-Biased Overlap (p=0.9); Order Stability = rescaled Kendall &tau;; Lineup = Jaccard; Top Pick = modal #1 share.</p></div></footer>
 
 <script>
 (function(){
@@ -146,7 +146,7 @@
     var bar='<span class="cbar"><span style="position:absolute;right:0;top:50%;transform:translateY(-50%);height:60%;width:'+w+'%;max-width:100%;background:color-mix(in srgb, var(--teal) 22%, transparent);border-radius:3px;z-index:0"></span><span style="position:relative;z-index:1">'+e.c.toFixed(1)+'</span></span>';
     tb.insertAdjacentHTML("beforeend","<tr><td>"+e.name+badge+"</td><td class='n'>"+bar+"</td><td class='n'>"+e.l.toFixed(1)+"</td><td class='n'>"+e.o.toFixed(1)+"</td><td class='n'>"+e.t.toFixed(1)+"</td><td class='n'>"+e.n.toFixed(1)+"</td></tr>");
   });
-  tb.insertAdjacentHTML("beforeend","<tr class='total'><td>Overall</td><td class='n'>"+overall.c.toFixed(1)+"</td><td class='n'>"+overall.l.toFixed(1)+"</td><td class='n'>"+overall.o.toFixed(1)+"</td><td class='n'>"+overall.t.toFixed(1)+"</td><td class='n'>—</td></tr>");
+  tb.insertAdjacentHTML("beforeend","<tr class='total'><td>Overall</td><td class='n'>"+overall.c.toFixed(1)+"</td><td class='n'>"+overall.l.toFixed(1)+"</td><td class='n'>"+overall.o.toFixed(1)+"</td><td class='n'>"+overall.t.toFixed(1)+"</td><td class='n'>-</td></tr>");
 
   // heatmap (topics as rows, engines as columns)
   var engs=[
