@@ -90,9 +90,9 @@
         <p>Only the API can write (manage terms, spend credits, run prompts), read raw AI answer text, and query arbitrary date windows. Only the MCP exposes shopping data, per-term sources, and saved dashboard views as direct reads.</p>
       </div>
       <div class="find">
-        <span class="k">Custom metric</span>
-        <h3>Brand Rank is a metric you build, not one you fetch</h3>
-        <p>Brand Rank - a brand's position among all detected competitors by visibility - is our own metric, not part of the default Rankscale data set by design. Both tools return the raw visibility numbers; you compute the rank yourself, the same way AI Engine Consistency is built. This is exactly the kind of analysis the API and MCP open up beyond the web interface. (One detail: the MCP's <code>own_brand_rank</code> field is always 1 - a display artifact, so don't mistake it for the real rank.)</p>
+        <span class="k">Beyond the UI</span>
+        <h3>Both build custom metrics; only the API automates</h3>
+        <p>Custom metrics, calculations, and visualizations the web interface can't produce - Brand Rank is one example - work through either tool. The one thing reserved to the API is automation: scheduled or unattended runs need its write access.</p>
       </div>
       <div class="find">
         <span class="k">Identity</span>
