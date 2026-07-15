@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Claude Code × Rankscale API & MCP — Rankscale AI Summer Camp</title>
-  <meta name="description" content="Hands-on workshop: move from manual Rankscale dashboard work to automated, AI-driven workflows with Claude Code and the Rankscale REST API or MCP.">
+  <title>Webinar materials: Using the Rankscale API &amp; MCP</title>
+  <meta name="description" content="Materials and lasting reference for the Rankscale webinar — connecting Claude Code to the Rankscale API & MCP, reproducing and going beyond the standard charts, and comparing the two surfaces.">
   <link rel="stylesheet" href="assets/base.css">
   <style>
     /* ---- landing-page-only styles ---- */
@@ -16,34 +16,50 @@
     }
     .camp{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;
       text-transform:uppercase;color:var(--teal);background:var(--teal-soft);border-radius:999px;padding:6px 14px;margin:0 0 1.1rem}
-    .masthead h1{font-size:clamp(2.2rem,5.2vw,3.3rem);max-width:18ch}
-    .learngrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:10px}
-    .learn{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 20px 16px 44px;position:relative;font-size:.98rem;color:var(--muted);line-height:1.55}
-    .learn::before{content:"→";position:absolute;left:18px;top:15px;color:var(--teal);font-family:var(--mono);font-weight:700}
-    .learn strong{color:var(--ink);font-weight:600}
+    .masthead h1{font-size:clamp(2rem,4.6vw,2.95rem)}
+
+    /* agenda */
+    .agenda{list-style:none;counter-reset:step;margin:1.3rem 0 0;padding:0;max-width:66ch}
+    .agenda>li{counter-increment:step;position:relative;padding:15px 0 15px 48px;border-top:1px solid var(--line);font-size:1.04rem}
+    .agenda>li:first-child{border-top:none}
+    .agenda>li::before{content:counter(step);position:absolute;left:0;top:13px;width:29px;height:29px;border-radius:50%;
+      background:var(--teal-soft);color:var(--teal);font-family:var(--mono);font-size:.85rem;font-weight:600;
+      display:flex;align-items:center;justify-content:center}
+    .agenda ul{margin:.55rem 0 .1rem;padding-left:1.1rem}
+    .agenda ul li{margin:.35rem 0;color:var(--muted);font-size:.97rem;line-height:1.55}
+
     /* report cards */
-    .reports{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
-    @media(max-width:640px){.reports{grid-template-columns:1fr}}
-    a.report{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;background:var(--surface);
+    .reports{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:8px}
+    .report{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;background:var(--surface);
       border:1px solid var(--line);border-radius:16px;padding:24px 24px 22px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
     a.report:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 10px 30px -18px rgba(0,0,0,.4)}
-    a.report .ico{font-size:2rem;line-height:1}
-    a.report .rk{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:10px}
-    a.report h3{font-size:1.28rem;margin:2px 0 .2rem}
-    a.report p{margin:0;color:var(--muted);font-size:.96rem;line-height:1.55}
-    a.report .go{margin-top:12px;font-family:var(--mono);font-size:.8rem;color:var(--accent)}
-    /* host */
-    .host{display:flex;gap:16px;align-items:flex-start;background:var(--surface-2);border-radius:16px;padding:22px 24px}
-    .host .who{font-family:var(--serif);font-size:1.3rem;line-height:1.2}
-    .host .role{color:var(--muted);font-size:.95rem;margin-top:2px}
-    .host .em{font-size:2.2rem;line-height:1}
+    .report .ico{font-size:2rem;line-height:1}
+    .report .rk{font-family:var(--mono);font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:10px}
+    .report h3{font-size:1.28rem;margin:2px 0 .2rem}
+    .report p{margin:0;color:var(--muted);font-size:.96rem;line-height:1.55}
+    .report .go{margin-top:12px;font-family:var(--mono);font-size:.8rem;color:var(--accent)}
+    .report.soon{border-style:dashed}
+    .report.soon .go{color:var(--faint)}
+
+    /* speakers */
+    .people{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+    .person{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+    .avatar{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-family:var(--mono);font-size:.9rem;font-weight:600;background:var(--teal-soft);color:var(--teal)}
+    .person.guest .avatar{background:var(--amber-soft);color:var(--amber)}
+    .ptag{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+    .person.guest .ptag{color:var(--amber)}
+    .who{font-family:var(--serif);font-size:1.2rem;line-height:1.2}
+    .role{color:var(--muted);font-size:.92rem;margin:2px 0 9px}
+    .plinks{display:flex;gap:14px;flex-wrap:wrap}
+    .plinks a{font-family:var(--mono);font-size:.78rem}
   </style>
 </head>
 <body>
 
 <nav class="sitenav" aria-label="Webinar sections">
   <div class="inner">
-    <a class="brand" href="index.html">Rankscale × Claude Code</a>
+    <a class="brand" href="index.html">Webinar materials: Using the Rankscale API &amp; MCP</a>
     <a href="index.html" aria-current="page">Overview</a>
     <a href="mcp-vs-api.html">📊 MCP vs API</a>
     <a href="ai-engine-consistency.html">🎯 AI Consistency</a>
@@ -53,8 +69,8 @@
 <header class="masthead">
   <div class="wrap">
     <p class="camp">☀️ Rankscale AI Summer Camp · Session 8</p>
-    <h1>From manual work to automations</h1>
-    <p class="dek">A hands-on workshop on taking your Rankscale usage to the next level — moving from manual dashboard work to automated, AI-driven workflows with <strong>Claude Code</strong> and the Rankscale <strong>REST API</strong> or <strong>MCP</strong>.</p>
+    <h1>Webinar materials: Using the Rankscale API &amp; MCP</h1>
+    <p class="dek">A hands-on session on connecting <strong>Claude Code</strong> to Rankscale — driving the platform through its <strong>REST API</strong> and <strong>MCP</strong> to reproduce the standard charts and build analyses that go beyond the web interface. These pages are the session materials and a lasting reference for attendees.</p>
     <div class="meta">
       <span>16 Jul 2026</span>
       <span>16:00–17:00 CEST</span>
@@ -65,21 +81,23 @@
   </div>
 </header>
 
-<section id="about">
+<section id="agenda">
   <div class="wrap">
-    <p class="eyebrow">The session</p>
-    <h2>Go beyond the dashboard</h2>
-    <p class="lead">Rankscale AI is hosting a hands-on workshop where Chief of Staff and Rankscale power user <strong>Bojan Basrak</strong> shows you how to connect Claude Code to Rankscale and build repeatable, AI-driven reporting workflows you can reuse across every brand and client.</p>
-  </div>
-  <div class="wide">
-    <div class="learngrid">
-      <div class="learn"><strong>Connect Claude Code to Rankscale</strong> — via the REST API (Agency Growth &amp; Enterprise plans) or MCP (Pro plan).</div>
-      <div class="learn"><strong>Automate prompt &amp; search-term tracking</strong> — create, run, and manage terms programmatically.</div>
-      <div class="learn"><strong>Pull visibility, citation &amp; sentiment reports</strong> — and let Claude Code interpret the results for you.</div>
-      <div class="learn"><strong>Run page audits</strong> straight from your workflow.</div>
-      <div class="learn"><strong>Build repeatable automations</strong> you can reuse across every brand and client.</div>
-      <div class="learn"><strong>Live Q&amp;A</strong> — bring your own use cases.</div>
-    </div>
+    <p class="eyebrow">What we'll cover</p>
+    <h2>Webinar agenda</h2>
+    <ol class="agenda">
+      <li>Connecting and using the new Rankscale <strong>MCP</strong></li>
+      <li>Connecting and using the Rankscale <strong>API</strong> and the AI agent skill</li>
+      <li>Capabilities &amp; examples
+        <ul>
+          <li>Reproducing the standard Rankscale charts in your AI platform</li>
+          <li>Going beyond — creating new metrics and charts that aren't possible in the Rankscale web interface</li>
+        </ul>
+      </li>
+      <li>MCP vs API comparison</li>
+      <li>Advanced use — calculating AI engine consistency</li>
+      <li>Live Q&amp;A</li>
+    </ol>
   </div>
 </section>
 
@@ -87,7 +105,7 @@
   <div class="wrap">
     <p class="eyebrow">Follow along</p>
     <h2>Reference reports</h2>
-    <p>Two field studies we'll refer to during the workshop. Open them alongside the live demo.</p>
+    <p>Field studies and worked examples we'll refer to during the session. Open them alongside the live demo.</p>
   </div>
   <div class="wide">
     <div class="reports">
@@ -105,18 +123,53 @@
         <p>Ask nine AI engines the same question 1,722 times — do you get the same brands, in the same order? Where the run-to-run wobble actually lives.</p>
         <span class="go">Read the study →</span>
       </a>
+      <div class="report soon">
+        <span class="ico">🛠️</span>
+        <span class="rk">Worked examples</span>
+        <h3>Basic Usage and Advanced Analysis</h3>
+        <p>Step-by-step examples from the session — reproducing the standard Rankscale charts through Claude Code, then going beyond with custom metrics you can't build in the web interface.</p>
+        <span class="go">Coming soon</span>
+      </div>
     </div>
   </div>
 </section>
 
-<section id="host">
+<section id="speakers">
   <div class="wrap">
-    <p class="eyebrow">Your host</p>
-    <div class="host">
-      <span class="em">🧑‍💻</span>
-      <div>
-        <div class="who">Bojan Basrak</div>
-        <div class="role">Chief of Staff &amp; Rankscale power user — Granular Group</div>
+    <p class="eyebrow">Speakers</p>
+    <h2>Hosts &amp; guest</h2>
+  </div>
+  <div class="wide">
+    <div class="people">
+      <div class="person">
+        <span class="avatar">PS</span>
+        <div>
+          <div class="ptag">Host</div>
+          <div class="who">Patrick Schmid</div>
+          <div class="role">Co-Founder · <a href="https://rankscale.ai" target="_blank" rel="noopener">Rankscale</a></div>
+          <div class="plinks"><a href="https://www.linkedin.com/in/patrick-schmid-563634132/" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+        </div>
+      </div>
+      <div class="person">
+        <span class="avatar">JdB</span>
+        <div>
+          <div class="ptag">Host</div>
+          <div class="who">Jules de Bruin</div>
+          <div class="role">Chief of Staff · <a href="https://rankscale.ai" target="_blank" rel="noopener">Rankscale</a></div>
+          <div class="plinks"><a href="https://www.linkedin.com/in/jules-de-bruin-61305b11a/" target="_blank" rel="noopener">LinkedIn ↗</a></div>
+        </div>
+      </div>
+      <div class="person guest">
+        <span class="avatar">BB</span>
+        <div>
+          <div class="ptag">Guest</div>
+          <div class="who">Bojan Basrak</div>
+          <div class="role">SEO Lead · Granular Group</div>
+          <div class="plinks">
+            <a href="https://www.linkedin.com/in/bojan-basrak/" target="_blank" rel="noopener">LinkedIn ↗</a>
+            <a href="https://bojanbasrak.substack.com/" target="_blank" rel="noopener">Substack ↗</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -124,7 +177,7 @@
 
 <footer>
   <div class="wrap">
-    <p style="margin:0">Rankscale AI Summer Camp ☀️ · Session 8 · Workshop: Claude Code × Rankscale's REST API &amp; MCP · 16 Jul 2026, 16:00–17:00 CEST.</p>
+    <p style="margin:0">Rankscale AI Summer Camp ☀️ · Session 8 · Using the Rankscale API &amp; MCP with Claude Code · 16 Jul 2026, 16:00–17:00 CEST.</p>
   </div>
 </footer>
 
