@@ -43,10 +43,8 @@
 
     /* speakers */
     .people{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
-    .person{display:flex;gap:14px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
-    .avatar{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-      font-family:var(--mono);font-size:.9rem;font-weight:600;background:var(--teal-soft);color:var(--teal)}
-    .person.guest .avatar{background:var(--amber-soft);color:var(--amber)}
+    .person{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+    .person.guest{border-color:color-mix(in srgb,var(--amber) 40%,var(--line))}
     .ptag{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
     .person.guest .ptag{color:var(--amber)}
     .who{font-family:var(--serif);font-size:1.2rem;line-height:1.2}
@@ -109,6 +107,13 @@
   </div>
   <div class="wide">
     <div class="reports">
+      <div class="report soon">
+        <span class="ico">🛠️</span>
+        <span class="rk">Worked examples</span>
+        <h3>Basic Usage and Advanced Analysis</h3>
+        <p>Step-by-step examples from the session — reproducing the standard Rankscale charts through Claude Code, then going beyond with custom metrics you can't build in the web interface.</p>
+        <span class="go">Coming soon</span>
+      </div>
       <a class="report" href="mcp-vs-api.html">
         <span class="ico">📊</span>
         <span class="rk">Field comparison</span>
@@ -123,13 +128,6 @@
         <p>Ask nine AI engines the same question 1,722 times — do you get the same brands, in the same order? Where the run-to-run wobble actually lives.</p>
         <span class="go">Read the study →</span>
       </a>
-      <div class="report soon">
-        <span class="ico">🛠️</span>
-        <span class="rk">Worked examples</span>
-        <h3>Basic Usage and Advanced Analysis</h3>
-        <p>Step-by-step examples from the session — reproducing the standard Rankscale charts through Claude Code, then going beyond with custom metrics you can't build in the web interface.</p>
-        <span class="go">Coming soon</span>
-      </div>
     </div>
   </div>
 </section>
@@ -142,7 +140,6 @@
   <div class="wide">
     <div class="people">
       <div class="person">
-        <span class="avatar">PS</span>
         <div>
           <div class="ptag">Host</div>
           <div class="who">Patrick Schmid</div>
@@ -151,7 +148,6 @@
         </div>
       </div>
       <div class="person">
-        <span class="avatar">JdB</span>
         <div>
           <div class="ptag">Host</div>
           <div class="who">Jules de Bruin</div>
@@ -160,11 +156,10 @@
         </div>
       </div>
       <div class="person guest">
-        <span class="avatar">BB</span>
         <div>
           <div class="ptag">Guest</div>
           <div class="who">Bojan Basrak</div>
-          <div class="role">SEO Lead · Granular Group</div>
+          <div class="role">SEO Lead · <a href="https://granulargroup.com/" target="_blank" rel="noopener">Granular Group</a></div>
           <div class="plinks">
             <a href="https://www.linkedin.com/in/bojan-basrak/" target="_blank" rel="noopener">LinkedIn ↗</a>
             <a href="https://bojanbasrak.substack.com/" target="_blank" rel="noopener">Substack ↗</a>
