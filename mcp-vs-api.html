@@ -44,6 +44,7 @@
   <div class="inner">
     <a class="brand" href="index.html">Webinar materials: Using the Rankscale API &amp; MCP</a>
     <a href="index.html">Overview</a>
+    <a href="basic-and-advanced.html">🛠️ Worked examples</a>
     <a href="mcp-vs-api.html" aria-current="page">📊 MCP vs API</a>
     <a href="ai-engine-consistency.html">🎯 AI Consistency</a>
   </div>
@@ -92,7 +93,7 @@
       <div class="find">
         <span class="k">Beyond the UI</span>
         <h3>Both build custom metrics; only the API automates</h3>
-        <p>Custom metrics, calculations, and visualizations the web interface can't produce - Brand Rank is one example - work through either tool. The one thing reserved to the API is automation: scheduled or unattended runs need its write access.</p>
+        <p>Custom metrics, calculations, and visualizations the web interface can't produce - <a href="basic-and-advanced.html#part2-intro">Brand Rank</a> is one example - work through either tool. The one thing reserved to the API is automation: scheduled or unattended runs need its write access.</p>
       </div>
       <div class="find">
         <span class="k">Identity</span>
@@ -114,7 +115,7 @@
         <p style="margin:0;color:var(--muted);font-size:.96rem">A set of read-only tools an AI agent can call directly. Responses are pre-digested, capped, and safety-wrapped. Tool schemas load on demand, so the ramp-up cost is tiny - but every response lands straight in the model's context.</p>
       </div>
       <div class="card api">
-        <h3>The REST API (via a skill)</h3>
+        <h3>The REST API (via <a href="https://github.com/bojan-basrak/rankscale-api-skill" target="_blank" rel="noopener">a skill</a>)</h3>
         <p style="margin:0;color:var(--muted);font-size:.96rem">Raw HTTP endpoints called with <code>curl</code>. Full read <em>and write</em>. Responses are large and monolithic, but the agent writes them to disk and extracts only what it needs - keeping bulk payloads out of context at the cost of a heavier instruction set to learn first.</p>
       </div>
     </div>
@@ -292,7 +293,7 @@
         </ul>
       </div>
     </div>
-    <p>They complement each other; they are not rivals. A typical workflow uses the MCP for exploration and quick reads, and the API for scheduled exports, bulk analysis, and any change to the workspace.</p>
+    <p>They complement each other; they are not rivals. A typical workflow uses the MCP for exploration and quick reads, and the API for scheduled exports, bulk analysis, and any change to the workspace. The <a href="basic-and-advanced.html">worked examples</a> page shows the API side of that workflow end to end.</p>
   </div>
 </section>
 

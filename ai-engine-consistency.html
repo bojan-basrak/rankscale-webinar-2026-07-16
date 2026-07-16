@@ -32,6 +32,7 @@
   <div class="inner">
     <a class="brand" href="index.html">Webinar materials: Using the Rankscale API &amp; MCP</a>
     <a href="index.html">Overview</a>
+    <a href="basic-and-advanced.html">🛠️ Worked examples</a>
     <a href="mcp-vs-api.html">📊 MCP vs API</a>
     <a href="ai-engine-consistency.html" aria-current="page">🎯 AI Consistency</a>
   </div>
@@ -116,7 +117,7 @@
     <li><strong>Consistency (RBO) is a comparative scale.</strong> Top-weighted overlap on short lists runs low in absolute terms - use it to rank engines, not as a "70% = good" gauge.</li>
     <li><strong>Extraction is deterministic string-matching</strong> against Rankscale's alias lists (first-mention order = position), not a language model - fast and reproducible, with minor matching noise.</li>
   </ul></div>
-  <p style="font-size:.9rem;color:var(--muted)">Data: De'Longhi (US), pulled once via <code>POST /v1/metrics/search-terms-report</code> (all 63 search terms, answer texts included), analyzed offline. Reproducible against the same workspace.</p>
+  <p style="font-size:.9rem;color:var(--muted)">Data: De'Longhi (US), pulled once via <code>POST /v1/metrics/search-terms-report</code> using the <a href="https://github.com/bojan-basrak/rankscale-api-skill" target="_blank" rel="noopener">rankscale-api-skill</a> (all 63 search terms, answer texts included), analyzed offline. The same workspace's standard metrics and Brand Rank tables are on the <a href="basic-and-advanced.html">worked examples</a> page. Reproducible against the same workspace.</p>
   </div>
 </section>
 

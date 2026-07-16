@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Basic usage &amp; advanced analysis - Rankscale API worked examples</title>
+  <meta name="description" content="Worked examples from the Rankscale webinar: reproducing the standard dashboard charts through the REST API with Claude Code, then five analyses the web interface can't do.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/base.css">
+  <style>
+    /* ---- page-specific: worked examples ---- */
+    header.masthead{padding:64px 0 46px;background:radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--amber) 7%, transparent), transparent 62%)}
+    .badge{font-family:var(--mono);font-size:.6rem;font-weight:600;letter-spacing:.06em;padding:2px 6px;border-radius:5px;margin-left:7px;vertical-align:1px}
+    .badge.api{background:var(--teal-soft);color:var(--teal)} .badge.gui{background:var(--amber-soft);color:var(--amber)}
+    .legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:12px;color:var(--muted);margin-bottom:8px}
+    .legend span{display:inline-flex;align-items:center;gap:6px}
+    .legend i{width:16px;height:0;border-top-width:2.4px;border-top-style:solid;display:inline-block}
+    .legend i.dash{border-top-style:dashed}
+    tr.own td{background:var(--teal-soft)}
+    tr.own td:first-child{font-weight:600}
+    .yes{color:var(--good);font-weight:600} .no{color:var(--faint)}
+    /* scorecards */
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:1.4rem 0}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+    .card .lbl{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+    .card .val{font-family:var(--serif);font-size:1.9rem;line-height:1.15;margin:2px 0 0;font-variant-numeric:tabular-nums}
+    .card .delta{font-family:var(--mono);font-size:.72rem;margin-top:2px}
+    .delta.up{color:var(--good)} .delta.down{color:var(--warn)} .delta.flat{color:var(--faint)}
+    /* hero stat + chart row */
+    .statrow{display:flex;gap:18px;align-items:stretch;flex-wrap:wrap}
+    .statrow .stat{flex:0 0 220px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;justify-content:center}
+    .statrow .stat .big{font-family:var(--serif);font-size:3.2rem;line-height:1;font-variant-numeric:tabular-nums}
+    .statrow .stat .sub{font-size:.85rem;color:var(--muted);margin-top:8px;line-height:1.5}
+    .statrow figure{flex:1 1 480px;margin:0}
+    /* part dividers */
+    .part{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:0 0 .5rem}
+    /* chart hover tooltip */
+    figure{position:relative}
+    .tip{position:absolute;display:none;pointer-events:none;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.5;box-shadow:0 8px 24px -12px rgba(0,0,0,.45);z-index:10;white-space:nowrap}
+    .tip b{font-family:var(--mono);font-size:11px}
+    .tip .row{display:flex;align-items:center;gap:6px}
+    .tip .row i{width:9px;height:9px;border-radius:2px;display:inline-block}
+    .hm td{text-align:center;border-radius:4px;border-bottom:none;padding:7px 2px}
+    code{background:var(--surface-2);padding:1px 5px;border-radius:5px}
+    pre{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow-x:auto;font-size:.82rem;line-height:1.6}
+    pre code{background:none;padding:0}
+  </style>
+</head>
+<body>
+
+<nav class="sitenav" aria-label="Webinar sections">
+  <div class="inner">
+    <a class="brand" href="index.html">Webinar materials: Using the Rankscale API &amp; MCP</a>
+    <a href="index.html">Overview</a>
+    <a href="basic-and-advanced.html" aria-current="page">🛠️ Worked examples</a>
+    <a href="mcp-vs-api.html">📊 MCP vs API</a>
+    <a href="ai-engine-consistency.html">🎯 AI Consistency</a>
+  </div>
+</nav>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Worked examples &middot; De'Longhi (US)</p>
+    <h1>Basic usage &amp; advanced analysis</h1>
+    <p class="dek">Every chart on this page came out of the <strong>Rankscale REST API</strong> through Claude Code and the public <a href="https://github.com/bojan-basrak/rankscale-api-skill" target="_blank" rel="noopener">rankscale-api-skill</a>. Part 1 reproduces the standard dashboard views. Part 2 builds five analyses the web interface has no screen for. The tracked brand is De'Longhi (US), from its first tracked day to yesterday's data.</p>
+    <div class="meta">
+      <span>2026-05-28 → 2026-07-14</span>
+      <span>29 tracked days, one 20-day gap</span>
+      <span>7 topics &times; 9 engines = 63 terms</span>
+      <span>83 API calls</span>
+      <span>Source: Rankscale REST API</span>
+    </div>
+  </div>
+</header>
+
+<section id="part1-intro">
+  <div class="wrap">
+    <p class="part">Part 1 of 2</p>
+    <h2>Reproducing the Rankscale web UI</h2>
+    <p>The goal here is trust, not novelty: before building anything custom, confirm the API returns the same numbers the dashboard shows. Each block below is one standard dashboard view, rebuilt from <code>POST /v1/metrics/report</code> (plus <code>/citations</code> and the topics endpoint) with a custom date window - first tracked day to yesterday.</p>
+  </div>
+</section>
+
+<section id="b1">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 1</p><h2>Topics and prompts under measurement</h2>
+  <p>The setup is deliberately simple: <strong>one prompt per topic, run on all nine engines</strong>, so every topic &times; engine cell rests on the same question. That gives 7 &times; 9 = 63 tracked search terms.</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table>
+    <thead><tr><th>Topic</th><th>Prompt</th><th class="n">Engines</th></tr></thead>
+    <tbody id="t1"></tbody>
+  </table></div></div>
+</section>
+
+<section id="b2">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 2</p><h2>Overall Visibility Score across days</h2>
+  <p>Daily Visibility for the full window. The shaded band is the 20-day tracking pause - the line breaks rather than bridging it, because no data exists there.</p></div>
+  <div class="wide"><div class="statrow reveal">
+    <div class="stat">
+      <span class="lbl" style="font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">Avg Visibility, entire period</span>
+      <span class="big" id="avgVis"></span>
+      <span class="sub">Rankscale's period aggregate (what the dashboard headline shows). It is <strong>period-weighted</strong>, not the mean of the daily values - the simple mean of the 29 dailies is <span id="meanVis"></span>. Both are correct; they answer different questions.</span>
+    </div>
+    <figure>
+      <div style="overflow-x:auto"><svg id="cOverall" viewBox="0 0 1000 380" role="img" aria-label="Daily visibility score for De'Longhi from May 28 to July 14, rising from about 44 to about 57, with a 20-day tracking gap in between"></svg></div>
+      <figcaption>Visibility climbed from ~44 to ~57 across the window, most of it during the first tracked block. Hover for exact values.</figcaption>
+    </figure>
+  </div></div>
+</section>
+
+<section id="b3">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 3</p><h2>Standard metric scorecards</h2>
+  <p>Everything <code>/report</code> returns by default for the window, with the trend vs. the previous period of the same length. One reading note: for <strong>Avg Position</strong> a negative delta means the position number went down, which is an improvement.</p></div>
+  <div class="wide"><div class="cards reveal" id="cards"></div>
+  <p style="font-size:.9rem;color:var(--muted)">Snapshot values are Rankscale's weighted aggregates over the window - they are not sums of the daily series, so don't try to reconcile them by hand.</p></div>
+</section>
+
+<section id="b4">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 4</p><h2>Visibility by AI engine</h2>
+  <p>Same metric, cut per engine. <code>[API]</code> = provider API, <code>[GUI]</code> = live browser interface - the same labeling as the <a href="ai-engine-consistency.html">consistency study</a>. De'Longhi holds Brand Rank #1 in every engine, but the spread is real: ChatGPT sees the brand at 67.6, Google AI Mode at 48.4.</p></div>
+  <div class="wide">
+    <div class="tablewrap reveal"><table>
+      <thead><tr><th>AI Engine</th><th class="n">Visibility</th><th class="n">Detection %</th><th class="n">Avg Position</th><th class="n">Brand Rank</th></tr></thead>
+      <tbody id="t4"></tbody>
+    </table></div>
+    <figure class="reveal">
+      <div class="legend" id="lg4"></div>
+      <div style="overflow-x:auto"><svg id="cEngines" viewBox="0 0 1000 420" role="img" aria-label="Daily visibility per AI engine; nine lines between roughly 40 and 75, gap in the middle"></svg></div>
+      <figcaption>Solid = [API] engines, dashed = [GUI]. The ordering is fairly stable across the window; ChatGPT and Perplexity stay at the top of the band, Google AI Mode and Google AI Overview at the bottom.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="b5">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 5</p><h2>Visibility over time - top 10 brands</h2>
+  <p>The ten most visible brands of the window, De'Longhi highlighted. One honest limitation: the API's <strong>competitor time series only reaches back about two weeks</strong>, so competitor lines start on 07-07 even though their window aggregates cover the full period. The De'Longhi series is complete.</p></div>
+  <div class="wide"><figure class="reveal">
+    <div class="legend" id="lg5"></div>
+    <div style="overflow-x:auto"><svg id="cComps" viewBox="0 0 1000 420" role="img" aria-label="Daily visibility for the top ten brands; De'Longhi around 55 to 57, all competitors below 21"></svg></div>
+    <figcaption>De'Longhi sits ~3&times; above the nearest competitor on every tracked day. The competitor cluster (Breville, Jura, Technivorm) runs between 5 and 21.</figcaption>
+  </figure></div>
+</section>
+
+<section id="b6">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 6</p><h2>Top 20 competitors</h2>
+  <p>Sorted by window Visibility. <strong>Rank when found</strong> is the average list position on the runs where the brand actually appeared - a brand can rank well when found but be found rarely (see Fellow Aiden: position 2.6, but in far fewer answers).</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table>
+    <thead><tr><th class="n">#</th><th>Brand</th><th class="n">Visibility</th><th class="n">Detection %</th><th class="n">Rank when found</th></tr></thead>
+    <tbody id="t6"></tbody>
+  </table></div></div>
+</section>
+
+<section id="b7">
+  <div class="wrap"><p class="eyebrow">Basic &middot; 7</p><h2>Top 20 domains by citations</h2>
+  <p>Which websites AI engines cite when answering the 63 tracked prompts, from <code>POST /v1/metrics/citations</code>: <span id="citTotals"></span>. <strong>Mentions your brand</strong> = at least one cited URL on that domain mentions De'Longhi.</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table>
+    <thead><tr><th class="n">#</th><th>Domain</th><th class="n">Citations</th><th class="n">Share</th><th>Mentions your brand</th></tr></thead>
+    <tbody id="t7"></tbody>
+  </table></div></div>
+</section>
+
+<section id="part2-intro">
+  <div class="wrap">
+    <p class="part">Part 2 of 2</p>
+    <h2>Advanced analysis - past the web UI</h2>
+    <p>The dashboard shows one cut at a time. The API lets you re-run the same report with filters and combine the cuts into tables that don't exist as screens. The custom metric used throughout is <strong>Brand Rank (by Visibility)</strong>: the brand's position among all detected brands for a given cut, sorted by Visibility, rank 1 = most visible. It is computed from the competitor list on every call - deliberately not read from any ready-made rank field (see the method notes at the bottom for why).</p>
+  </div>
+</section>
+
+<section id="a1">
+  <div class="wrap"><p class="eyebrow">Advanced &middot; 1</p><h2>Topics: Brand Rank and Visibility</h2>
+  <p>One filtered <code>/report</code> per topic. This is the table that breaks the "rank #1" headline apart - the four automatic-machine topics are won outright, manual espresso and drip are not close.</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table>
+    <thead><tr><th>Topic</th><th class="n">Brand Rank</th><th class="n">of brands</th><th class="n">Visibility</th></tr></thead>
+    <tbody id="ta1"></tbody>
+  </table></div></div>
+</section>
+
+<section id="a2">
+  <div class="wrap"><p class="eyebrow">Advanced &middot; 2</p><h2>AI engines: Brand Rank and Visibility</h2>
+  <p>Same computation, cut per engine instead of per topic. Rank #1 across the board - averaged over all topics, every engine puts De'Longhi first. Keep A1 in mind while reading this: the engine averages are carried by the automatic-coffee topics.</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table>
+    <thead><tr><th>AI Engine</th><th class="n">Brand Rank</th><th class="n">of brands</th><th class="n">Visibility</th></tr></thead>
+    <tbody id="ta2"></tbody>
+  </table></div></div>
+</section>
+
+<section id="a3">
+  <div class="wrap"><p class="eyebrow">Advanced &middot; 3</p><h2>Pivot: Brand Rank per topic &times; engine</h2>
+  <p>The full 63-cell map - one filtered <code>/report</code> per cell. Darker = better rank. A hyphen means De'Longhi was never detected in that cell during the window. This is the single most useful table on the page: it shows <em>which engine</em> loses you <em>which topic</em>, not just averages.</p></div>
+  <div class="wide"><figure class="reveal">
+    <div id="hmPivot" style="overflow-x:auto"></div>
+    <figcaption>Read row by row: bean-to-cup is rank #1 on eight engines and simply absent on Claude 4.5 Haiku (0 mentions in 28 runs). Drip coffee makers barely register anywhere - two engines rank De'Longhi at #20 and #22, the other seven never name it.</figcaption>
+  </figure></div>
+</section>
+
+<section id="a4">
+  <div class="wrap"><p class="eyebrow">Advanced &middot; 4</p><h2>Best-ranked brands per GUI engine</h2>
+  <p>For each browser-based engine, the brands sorted by Visibility - the answer to "who is winning in each engine users actually see". De'Longhi highlighted; the interesting part is places #2-#4, where Jura and Breville swap depending on the engine.</p></div>
+  <div class="wide"><div class="tablewrap reveal"><table id="ta4">
+    <thead></thead><tbody></tbody>
+  </table></div></div>
+</section>
+
+<section id="a5">
+  <div class="wrap"><p class="eyebrow">Advanced &middot; 5</p><h2>Citations per day - top 20 URLs that mention De'Longhi</h2>
+  <p>From the URL-level citation data: the 20 most-cited individual pages that mention De'Longhi, and how often engines cited each one per day. 510 of the 3,724 cited URLs mention the brand; these 20 carry a large share of that volume.</p></div>
+  <div class="wide"><figure class="reveal">
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap">
+      <span>Citations/day</span><span style="display:inline-block;width:120px;height:10px;border-radius:3px;background:linear-gradient(90deg,rgb(224,240,237),rgb(15,90,80))"></span><span>1 → 15 &nbsp;·&nbsp; blank = not cited that day</span></div>
+    <div id="hmUrls" style="overflow-x:auto"></div>
+    <figcaption>The heavy hitters (homecoffeeexpert.com, coffeeness.de, techradar.com) are cited every single tracked day - these pages are structural to how AI engines answer coffee-machine questions, not one-off sources. Hover any cell for the exact count.</figcaption>
+  </figure></div>
+</section>
+
+<section id="method">
+  <div class="wrap"><p class="eyebrow">Method &amp; caveats</p><h2>How these charts were made</h2>
+  <p>83 API calls in total: 1 topics list, 1 search-terms report (for the prompts), 1 overall daily report, 1 citations pull, 7 per-topic reports, 9 per-engine reports, and 63 per-cell reports for the pivot. Every response was saved to a local JSON file first and all tables were computed from the files - the page never re-queries the API. The whole pull runs in about a minute, well inside the 200 requests/minute limit.</p>
+  <p>The only request shape that matters, with filters swapped per cut:</p>
+  <pre><code>POST /v1/metrics/report
+{
+  "brandId": "&lt;id&gt;",
+  "isoStartDate": "2026-05-28",
+  "isoEndDate": "2026-07-14",
+  "aggregation": "daily",
+  "includeNotFoundExecutions": true,
+  "selectedTopic": "&lt;topic id&gt;",     // per-topic and pivot cuts
+  "selectedEngine": "&lt;engine id&gt;"    // per-engine and pivot cuts
+}</code></pre>
+  <div class="callout"><span class="k">Read with these in mind</span>
+  <ul>
+    <li><strong>The end date is exclusive.</strong> Asking the API for a window ending 07-14 returns data through 07-15. We keep the requested end date and slice the extra day off client-side rather than compensating in the request.</li>
+    <li><strong>Aggregate &ne; mean of dailies.</strong> The window Visibility of 56.7 is Rankscale's period-weighted figure; the simple mean of the 29 daily values is 50.0. Headlines use the aggregate, trend reading uses the dailies.</li>
+    <li><strong>Brand Rank is computed, not read.</strong> Rank = 1 + (brands with strictly higher Visibility in the cut). The API's ready-made rank fields don't reproduce the dashboard reliably (the <a href="mcp-vs-api.html">MCP</a>'s <code>own_brand_rank</code> is always 1), so we don't use them.</li>
+    <li><strong>Competitor daily series are short.</strong> The per-competitor time series only reaches back ~2 weeks regardless of the requested window - verified by re-querying the first block alone. Window aggregates are complete; only the competitor <em>lines</em> in chart B5 are truncated.</li>
+    <li><strong>The 20-day gap stays a gap.</strong> No interpolation anywhere on this page.</li>
+    <li><strong>One field oddity:</strong> the daily <code>brandNotFound</code> flag is <code>true</code> on all 29 days even though detection rate is 62% - it doesn't match the observable data and we ignored it.</li>
+  </ul></div>
+  <p style="font-size:.9rem;color:var(--muted)">Data: De'Longhi (US), first tracked day 2026-05-28 through 2026-07-14, pulled 2026-07-15 via the <a href="https://github.com/bojan-basrak/rankscale-api-skill" target="_blank" rel="noopener">rankscale-api-skill</a>. Raw responses cached as local JSON; reproducible against the same workspace.</p>
+  </div>
+</section>
+
+<footer><div class="wrap"><p style="margin:0">Basic usage &amp; advanced analysis - Rankscale API worked examples on De'Longhi (US). 29 tracked days, 7 topics &times; 9 engines, 83 API calls. Part of the <a href="index.html">Rankscale webinar materials</a>.</p></div></footer>
+
+<script>
+var DATA={"meta":{"brand":"De'Longhi (US)","windowStart":"2026-05-28","windowEnd":"2026-07-14","pulled":"2026-07-15","trackedDays":29,"totalExecutions":1722,"gapStart":"2026-06-18","gapEnd":"2026-07-06","engines":[{"id":"chatgpt_gui","name":"ChatGPT","tier":"gui"},{"id":"google_ai_overview","name":"Google AI Overview","tier":"gui"},{"id":"google_ai_mode_gui","name":"Google AI Mode","tier":"gui"},{"id":"google_gemini_gui","name":"Google Gemini","tier":"gui"},{"id":"perplexity_gui","name":"Perplexity","tier":"gui"},{"id":"perplexity_sonar_pro","name":"Perplexity Sonar Pro","tier":"api"},{"id":"openai_gpt-5","name":"GPT-5","tier":"api"},{"id":"google_gemini_30_flash","name":"Gemini 3 Flash","tier":"api"},{"id":"anthropic_claude_4_5_haiku","name":"Claude 4.5 Haiku","tier":"api"}]},"topicsPrompts":[{"topic":"manual espresso machines","prompt":"which manual espresso machines would you recommend","nTerms":9,"nEngines":9},{"topic":"best drip coffee maker","prompt":"what are the best drip coffee makers","nTerms":9,"nEngines":9},{"topic":"bean to cup coffee machines","prompt":"which bean to cup coffee machine should I buy","nTerms":9,"nEngines":9},{"topic":"best automatic latte machine for home","prompt":"what's the best automatic latte machine for home","nTerms":9,"nEngines":9},{"topic":"automatic coffee machines","prompt":"what are the best automatic coffee machines","nTerms":9,"nEngines":9},{"topic":"best automatic coffee machines with grinder","prompt":"find me the best automatic coffee machines with a built in grinder","nTerms":9,"nEngines":9},{"topic":"best espresso machine under 500","prompt":"what's the best espresso machine under 500","nTerms":9,"nEngines":9}],"overallDaily":{"dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[43.5,43.6,44.4,45.2,45,43.7,44.3,44.7,44,45,44.4,44.4,45,48,49,50.8,52.2,52.9,54.3,55.7,57.2,55.3,56.6,56.1,55.7,57,57.2,57,57.3],"avgAggregate":56.7,"avgSimpleMean":50,"brandNotFoundAll":true},"scorecards":{"visibilityScore":56.7,"sentiment":85.5,"mentions":1022,"citations":1945,"avgPosition":2.5,"detectionRate":62.1,"top3":53.8,"trends":{"visibilityScore":-0.6,"sentiment":0.3,"mentions":-2,"citations":-4,"avgPosition":-0.1,"detectionRate":-0.8,"top3":-0.8}},"byEngine":{"table":[{"id":"chatgpt_gui","name":"ChatGPT","tier":"gui","visibility":67.6,"detectionRate":75,"avgPosition":3.1,"brandRank":1,"pool":91},{"id":"perplexity_gui","name":"Perplexity","tier":"gui","visibility":64.5,"detectionRate":75,"avgPosition":2.7,"brandRank":1,"pool":98},{"id":"google_gemini_30_flash","name":"Gemini 3 Flash","tier":"api","visibility":62.7,"detectionRate":67.3,"avgPosition":2.1,"brandRank":1,"pool":76},{"id":"openai_gpt-5","name":"GPT-5","tier":"api","visibility":57.8,"detectionRate":65.3,"avgPosition":2.4,"brandRank":1,"pool":99},{"id":"perplexity_sonar_pro","name":"Perplexity Sonar Pro","tier":"api","visibility":57.1,"detectionRate":58.9,"avgPosition":3.1,"brandRank":1,"pool":95},{"id":"google_gemini_gui","name":"Google Gemini","tier":"gui","visibility":51.5,"detectionRate":55.1,"avgPosition":1.7,"brandRank":1,"pool":69},{"id":"anthropic_claude_4_5_haiku","name":"Claude 4.5 Haiku","tier":"api","visibility":50.8,"detectionRate":53.6,"avgPosition":1.7,"brandRank":1,"pool":52},{"id":"google_ai_overview","name":"Google AI Overview","tier":"gui","visibility":50,"detectionRate":51.8,"avgPosition":1.4,"brandRank":1,"pool":52},{"id":"google_ai_mode_gui","name":"Google AI Mode","tier":"gui","visibility":48.4,"detectionRate":57.1,"avgPosition":3.2,"brandRank":1,"pool":95}],"series":[{"id":"chatgpt_gui","name":"ChatGPT","tier":"gui","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[62.8,57.4,60.7,61.9,62.8,61,59.8,62,62.7,63.8,63.7,64.3,64.2,67.3,67.1,66,65.6,65.9,57.3,64.9,73.6,73.9,69.5,67.9,70,66.9,67.1,67.4,67.2]},{"id":"google_ai_overview","name":"Google AI Overview","tier":"gui","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[38.1,39.2,47.9,52.7,55.7,56.9,58.4,58.1,58.9,57,55.4,54,56.4,58.5,56.7,56.8,63.7,59.9,55.9,56.7,34.9,44.8,43.7,37.7,51.1,51.9,50.4,51.4]},{"id":"google_ai_mode_gui","name":"Google AI Mode","tier":"gui","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[67.7,67.7,63.3,64.1,64,63.6,62.6,61.6,59.5,58.1,54.4,55.5,53.8,51.4,48.7,48,46.6,47.3,56.1,48.3,50,51.1,55.5,50.1,51.5,50.8,48.7,49.5,50.5]},{"id":"google_gemini_gui","name":"Google Gemini","tier":"gui","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[53.5,58.4,52,52,51.6,46.9,47.5,49.5,49,50.4,48.9,50,50.7,55.4,57,55.5,53.7,53.8,60,56.1,55.8,55.2,49.8,51,50.9,51.6,52.2,52.3]},{"id":"perplexity_gui","name":"Perplexity","tier":"gui","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[26.2,26.1,30.9,29.1,25.7,25.3,25.5,25.5,23.8,28.2,28.2,31.6,36,41.4,44.7,51.4,57.9,59.1,63.6,64.3,60.5,49.8,55.2,62.3,58.7,59.7,62.1,62.3,63.8]},{"id":"perplexity_sonar_pro","name":"Perplexity Sonar Pro","tier":"api","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[8.4,9.3,6.2,11,8.8,9,9.8,10.2,8.7,12,10.7,7.6,7.8,14.5,21,30.3,33.5,43,50.9,56.6,59.3,57.1,61.6,60.1,59,60.1,59.6,59,58.7]},{"id":"openai_gpt-5","name":"GPT-5","tier":"api","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[27.3,32.5,35.1,32.8,35.9,34.1,36.8,36.8,38.8,39.8,43.1,42,41.9,46.6,50,53.2,54.4,54.9,60.5,62.1,65.1,59.1,59.5,57.3,58.9,59.5,58.2,57.3]},{"id":"google_gemini_30_flash","name":"Gemini 3 Flash","tier":"api","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[69,62.4,59.4,60.3,58.1,55.2,56.9,57.4,55.3,54.8,54.6,54.2,54,56.2,55.3,54.8,55.1,56.8,56.9,57.8,60.8,66.7,66,65.5,65.4,65.8,64.3,63.3,62.6]},{"id":"anthropic_claude_4_5_haiku","name":"Claude 4.5 Haiku","tier":"api","dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"vis":[39,39.8,43.8,42.9,42.4,41.6,41.2,40.8,39.2,40.5,40.5,40.3,40.2,40.5,40.8,41,39,35.6,36,34.1,0,42.9,42.2,46.4,47.9,49.2,49.7,50.4,52.2]}]},"topCompetitorsDaily":{"dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"competitorDataFrom":"2026-07-07","series":[{"name":"De'Longhi (US)","isOwn":true,"agg":56.7,"vis":[43.5,43.6,44.4,45.2,45,43.7,44.3,44.7,44,45,44.4,44.4,45,48,49,50.8,52.2,52.9,54.3,55.7,57.2,55.3,56.6,56.1,55.7,57,57.2,57,57.3]},{"name":"Breville Bambino Plus","isOwn":false,"agg":19.1,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,17.8,19.4,19.1,19.5,18.8,19.1,18.9,19.7]},{"name":"Jura Z10","isOwn":false,"agg":18.6,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,19.7,19.5,17.5,17,18.2,18.1,18.5,17.8]},{"name":"Jura E8","isOwn":false,"agg":17.9,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,16.3,18.1,17.5,20.2,19.4,19.3,19.6,16.9]},{"name":"Technivorm Moccamaster KBGV Select","isOwn":false,"agg":12.1,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,9.8,9.7,10.7,11.1,9.6,10.9,11.9,11.8]},{"name":"Fellow Aiden Precision Coffee Maker","isOwn":false,"agg":9.8,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,10.1,10.4,10.2,11.1,10.6,10.1,10.4,10.1]},{"name":"Gaggia Classic Pro","isOwn":false,"agg":9.7,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,9.7,10.6,9.9,10.1,10.8,9.7,9.4,9.7]},{"name":"Breville Barista Express Impress","isOwn":false,"agg":9.5,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,7.7,9.6,9.4,10.4,9.2,8.7,9.5,9.2]},{"name":"Flair 58","isOwn":false,"agg":7.7,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,7.8,4.7,7.8,7.6,7.4,7.5,7.8,7.8]},{"name":"Cafelat Robot","isOwn":false,"agg":7.1,"vis":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,8.5,7.1,7.2,7.2,6.9,7.1,7,7.2]}]},"competitorTable":[{"rank":1,"name":"De'Longhi (US)","isOwn":true,"visibility":56.7,"detectionRate":62.1,"avgRank":2.3},{"rank":2,"name":"Breville Bambino Plus","isOwn":false,"visibility":19.1,"detectionRate":21.9,"avgRank":3.4},{"rank":3,"name":"Jura Z10","isOwn":false,"visibility":18.6,"detectionRate":23,"avgRank":3.7},{"rank":4,"name":"Jura E8","isOwn":false,"visibility":17.9,"detectionRate":21,"avgRank":2.9},{"rank":5,"name":"Technivorm Moccamaster KBGV Select","isOwn":false,"visibility":12.1,"detectionRate":13.4,"avgRank":2.4},{"rank":6,"name":"Fellow Aiden Precision Coffee Maker","isOwn":false,"visibility":9.8,"detectionRate":11.6,"avgRank":3.2},{"rank":7,"name":"Gaggia Classic Pro","isOwn":false,"visibility":9.7,"detectionRate":11.3,"avgRank":3},{"rank":8,"name":"Breville Barista Express Impress","isOwn":false,"visibility":9.5,"detectionRate":12.3,"avgRank":4.5},{"rank":9,"name":"Flair 58","isOwn":false,"visibility":7.7,"detectionRate":8.3,"avgRank":1.8},{"rank":10,"name":"Cafelat Robot","isOwn":false,"visibility":7.1,"detectionRate":8.3,"avgRank":2.9},{"rank":11,"name":"Breville Precision Brewer","isOwn":false,"visibility":6.6,"detectionRate":8.1,"avgRank":3.7},{"rank":12,"name":"Wacaco Picopresso","isOwn":false,"visibility":6.5,"detectionRate":8.6,"avgRank":4.6},{"rank":13,"name":"Philips 3200 LatteGo","isOwn":false,"visibility":6.1,"detectionRate":7.3,"avgRank":3.2},{"rank":14,"name":"OXO Brew 9-Cup Coffee Maker","isOwn":false,"visibility":5.9,"detectionRate":7.5,"avgRank":3.8},{"rank":15,"name":"Philips 5500 Series","isOwn":false,"visibility":5.4,"detectionRate":6.6,"avgRank":3.5},{"rank":16,"name":"Philips 3300 LatteGo","isOwn":false,"visibility":5.2,"detectionRate":6.9,"avgRank":3.6},{"rank":17,"name":"Breville Barista Touch","isOwn":false,"visibility":5.2,"detectionRate":6.3,"avgRank":4.3},{"rank":18,"name":"Breville Grind Control","isOwn":false,"visibility":4.8,"detectionRate":6.7,"avgRank":6.2},{"rank":19,"name":"Terra Kaffe TK-02","isOwn":false,"visibility":4.6,"detectionRate":6.3,"avgRank":4.1},{"rank":20,"name":"Breville Oracle Jet","isOwn":false,"visibility":4.6,"detectionRate":6.5,"avgRank":4.6}],"citationDomains":[{"rank":1,"domain":"youtube.com","occurrences":1721,"share":11.8,"mentionsBrand":true,"ownMentions":234},{"rank":2,"domain":"coffeeness.de","occurrences":952,"share":6.5,"mentionsBrand":true,"ownMentions":189},{"rank":3,"domain":"reddit.com","occurrences":613,"share":4.2,"mentionsBrand":true,"ownMentions":92},{"rank":4,"domain":"techradar.com","occurrences":497,"share":3.4,"mentionsBrand":true,"ownMentions":97},{"rank":5,"domain":"homecoffeeexpert.com","occurrences":436,"share":3,"mentionsBrand":true,"ownMentions":113},{"rank":6,"domain":"seattlecoffeegear.com","occurrences":380,"share":2.6,"mentionsBrand":true,"ownMentions":47},{"rank":7,"domain":"tomsguide.com","occurrences":346,"share":2.4,"mentionsBrand":true,"ownMentions":40},{"rank":8,"domain":"google.com","occurrences":291,"share":2,"mentionsBrand":true,"ownMentions":39},{"rank":9,"domain":"coffeechronicler.com","occurrences":226,"share":1.5,"mentionsBrand":true,"ownMentions":2},{"rank":10,"domain":"goodhousekeeping.com","occurrences":222,"share":1.5,"mentionsBrand":true,"ownMentions":39},{"rank":11,"domain":"consumerreports.org","occurrences":220,"share":1.5,"mentionsBrand":false,"ownMentions":0},{"rank":12,"domain":"coffeekev.com","occurrences":179,"share":1.2,"mentionsBrand":true,"ownMentions":23},{"rank":13,"domain":"espressorabbithole.com","occurrences":164,"share":1.1,"mentionsBrand":true,"ownMentions":117},{"rank":14,"domain":"seriouseats.com","occurrences":162,"share":1.1,"mentionsBrand":true,"ownMentions":2},{"rank":15,"domain":"homegrounds.co","occurrences":159,"share":1.1,"mentionsBrand":false,"ownMentions":0},{"rank":16,"domain":"wholelattelove.com","occurrences":148,"share":1,"mentionsBrand":true,"ownMentions":4},{"rank":17,"domain":"delonghi.com","occurrences":141,"share":1,"mentionsBrand":true,"ownMentions":82},{"rank":18,"domain":"forbes.com","occurrences":138,"share":0.9,"mentionsBrand":true,"ownMentions":35},{"rank":19,"domain":"bonappetit.com","occurrences":132,"share":0.9,"mentionsBrand":true,"ownMentions":1},{"rank":20,"domain":"t3.com","occurrences":129,"share":0.9,"mentionsBrand":true,"ownMentions":37}],"citationMeta":{"totalCitations":14629,"uniqueDomains":968,"uniqueCitations":3724},"topicRank":[{"topic":"automatic coffee machines","brandRank":1,"visibility":93,"pool":93},{"topic":"best automatic latte machine for home","brandRank":1,"visibility":88.9,"pool":70},{"topic":"best automatic coffee machines with grinder","brandRank":1,"visibility":83.3,"pool":90},{"topic":"bean to cup coffee machines","brandRank":1,"visibility":81.2,"pool":94},{"topic":"best espresso machine under 500","brandRank":3,"visibility":41.9,"pool":66},{"topic":"manual espresso machines","brandRank":15,"visibility":7,"pool":83},{"topic":"best drip coffee maker","brandRank":43,"visibility":1.7,"pool":88}],"engineRank":[{"name":"ChatGPT","tier":"gui","brandRank":1,"visibility":67.6,"pool":91},{"name":"Perplexity","tier":"gui","brandRank":1,"visibility":64.5,"pool":98},{"name":"Gemini 3 Flash","tier":"api","brandRank":1,"visibility":62.7,"pool":76},{"name":"GPT-5","tier":"api","brandRank":1,"visibility":57.8,"pool":99},{"name":"Perplexity Sonar Pro","tier":"api","brandRank":1,"visibility":57.1,"pool":95},{"name":"Google Gemini","tier":"gui","brandRank":1,"visibility":51.5,"pool":69},{"name":"Claude 4.5 Haiku","tier":"api","brandRank":1,"visibility":50.8,"pool":52},{"name":"Google AI Overview","tier":"gui","brandRank":1,"visibility":50,"pool":52},{"name":"Google AI Mode","tier":"gui","brandRank":1,"visibility":48.4,"pool":95}],"pivotTopicEngine":{"engines":[{"id":"chatgpt_gui","name":"ChatGPT","tier":"gui"},{"id":"google_ai_overview","name":"Google AI Overview","tier":"gui"},{"id":"google_ai_mode_gui","name":"Google AI Mode","tier":"gui"},{"id":"google_gemini_gui","name":"Google Gemini","tier":"gui"},{"id":"perplexity_gui","name":"Perplexity","tier":"gui"},{"id":"perplexity_sonar_pro","name":"Perplexity Sonar Pro","tier":"api"},{"id":"openai_gpt-5","name":"GPT-5","tier":"api"},{"id":"google_gemini_30_flash","name":"Gemini 3 Flash","tier":"api"},{"id":"anthropic_claude_4_5_haiku","name":"Claude 4.5 Haiku","tier":"api"}],"rows":[{"topic":"manual espresso machines","cells":[{"rank":8,"vis":23.9},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":5,"vis":39.2},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0}]},{"topic":"best drip coffee maker","cells":[{"rank":20,"vis":8.9},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":22,"vis":6.3},{"rank":null,"vis":0},{"rank":null,"vis":0},{"rank":null,"vis":0}]},{"topic":"bean to cup coffee machines","cells":[{"rank":1,"vis":100},{"rank":1,"vis":95.9},{"rank":1,"vis":93},{"rank":1,"vis":80.4},{"rank":1,"vis":82.8},{"rank":1,"vis":100},{"rank":1,"vis":88.9},{"rank":1,"vis":89.9},{"rank":null,"vis":0}]},{"topic":"best automatic latte machine for home","cells":[{"rank":1,"vis":100},{"rank":1,"vis":100},{"rank":2,"vis":44.4},{"rank":1,"vis":95.9},{"rank":2,"vis":72.1},{"rank":1,"vis":100},{"rank":2,"vis":87.5},{"rank":1,"vis":100},{"rank":1,"vis":100}]},{"topic":"automatic coffee machines","cells":[{"rank":1,"vis":88.9},{"rank":1,"vis":96.4},{"rank":1,"vis":90.9},{"rank":1,"vis":87.9},{"rank":1,"vis":84.3},{"rank":1,"vis":98.8},{"rank":2,"vis":89.7},{"rank":1,"vis":100},{"rank":1,"vis":100}]},{"topic":"best automatic coffee machines with grinder","cells":[{"rank":1,"vis":96.4},{"rank":1,"vis":57.9},{"rank":6,"vis":40.6},{"rank":1,"vis":96.4},{"rank":3,"vis":82.5},{"rank":1,"vis":94.6},{"rank":1,"vis":90.9},{"rank":1,"vis":98.6},{"rank":2,"vis":92.1}]},{"topic":"best espresso machine under 500","cells":[{"rank":3,"vis":54.9},{"rank":null,"vis":0},{"rank":2,"vis":69.6},{"rank":null,"vis":0},{"rank":1,"vis":90.9},{"rank":null,"vis":0},{"rank":3,"vis":47.6},{"rank":4,"vis":50.3},{"rank":4,"vis":63.4}]}]},"pivotBestBrand":{"engines":[{"id":"chatgpt_gui","name":"ChatGPT"},{"id":"google_ai_overview","name":"Google AI Overview"},{"id":"google_ai_mode_gui","name":"Google AI Mode"},{"id":"google_gemini_gui","name":"Google Gemini"},{"id":"perplexity_gui","name":"Perplexity"}],"rows":[{"place":1,"cells":[{"name":"De'Longhi (US)","vis":67.6,"isOwn":true},{"name":"De'Longhi (US)","vis":50,"isOwn":true},{"name":"De'Longhi (US)","vis":48.4,"isOwn":true},{"name":"De'Longhi (US)","vis":51.5,"isOwn":true},{"name":"De'Longhi (US)","vis":64.5,"isOwn":true}]},{"place":2,"cells":[{"name":"Jura E8","vis":32.9,"isOwn":false},{"name":"Jura E8","vis":24.1,"isOwn":false},{"name":"Jura E8","vis":38.4,"isOwn":false},{"name":"Jura E8","vis":25.9,"isOwn":false},{"name":"Breville Oracle Touch","vis":28.9,"isOwn":false}]},{"place":3,"cells":[{"name":"Philips 3300 LatteGo","vis":25.9,"isOwn":false},{"name":"Jura Z10","vis":22,"isOwn":false},{"name":"Terra Kaffe Demi","vis":18,"isOwn":false},{"name":"Jura Z10","vis":21.4,"isOwn":false},{"name":"Philips 3200 Series","vis":21.7,"isOwn":false}]},{"place":4,"cells":[{"name":"Breville Bambino","vis":20.2,"isOwn":false},{"name":"Fellow Aiden","vis":19,"isOwn":false},{"name":"Ninja AutoBarista Pro","vis":18,"isOwn":false},{"name":"Breville Bambino Plus","vis":20.1,"isOwn":false},{"name":"Jura Z10","vis":20.9,"isOwn":false}]},{"place":5,"cells":[{"name":"Philips 2300 LatteGo","vis":15.7,"isOwn":false},{"name":"Flair 58 Plus 2","vis":14.3,"isOwn":false},{"name":"Breville Bambino Plus","vis":16.5,"isOwn":false},{"name":"Technivorm Moccamaster KBGV Select","vis":13.5,"isOwn":false},{"name":"Jura A1","vis":15.9,"isOwn":false}]},{"place":6,"cells":[{"name":"Flair 58","vis":13.9,"isOwn":false},{"name":"Breville Bambino Plus","vis":14.3,"isOwn":false},{"name":"Gaggia Magenta Prestige","vis":15.7,"isOwn":false},{"name":"Flair 58","vis":13.4,"isOwn":false},{"name":"Breville Barista Touch Impress","vis":13.6,"isOwn":false}]},{"place":7,"cells":[{"name":"Gaggia Classic Pro","vis":9.7,"isOwn":false},{"name":"Gaggia Magenta Prestige","vis":14,"isOwn":false},{"name":"Flair 58 Plus","vis":14.1,"isOwn":false},{"name":"Cafelat Robot","vis":13.1,"isOwn":false},{"name":"ROK EspressoGC","vis":12.8,"isOwn":false}]},{"place":8,"cells":[{"name":"Flair Classic","vis":9.6,"isOwn":false},{"name":"Breville Precision Brewer","vis":13.3,"isOwn":false},{"name":"Terra Kaffe TK-02","vis":13.3,"isOwn":false},{"name":"Philips 3200 LatteGo","vis":12.9,"isOwn":false},{"name":"Jura E8","vis":11.9,"isOwn":false}]}]},"urlCitationsDaily":{"dates":["2026-05-28","2026-05-29","2026-05-30","2026-05-31","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-06","2026-06-07","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-13","2026-06-14","2026-06-15","2026-06-16","2026-06-17","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-11","2026-07-12","2026-07-13","2026-07-14"],"urls":[{"url":"homecoffeeexpert.com/best-super-automatic-espresso-machine","domain":"homecoffeeexpert.com","occurrences":338,"daily":[10,13,12,11,10,12,11,9,15,11,9,9,11,13,13,10,11,11,11,10,2,13,12,9,16,14,14,13,11]},{"url":"coffeeness.de/en/best-super-automatic-espresso-machine","domain":"coffeeness.de","occurrences":319,"daily":[11,13,11,10,11,12,13,11,14,12,9,10,9,13,12,9,9,12,7,9,4,8,10,12,12,13,14,10,8]},{"url":"techradar.com/best/best-bean-to-cup-coffee-machine-2022-the-top-coffee-makers-for-barista-worthy-drinks","domain":"techradar.com","occurrences":168,"daily":[5,3,6,7,5,4,8,5,3,7,7,8,9,7,9,6,4,8,5,7,3,6,5,4,5,6,5,3,4]},{"url":"espressorabbithole.com/en/best-super-automatic-espresso-machines","domain":"espressorabbithole.com","occurrences":158,"daily":[9,9,8,5,6,5,5,6,5,5,7,9,7,8,5,5,5,4,6,5,3,5,4,4,2,3,2,3,4]},{"url":"coffeeness.de/en/best-espresso-machine-under-500","domain":"coffeeness.de","occurrences":131,"daily":[4,4,4,5,4,6,5,4,3,4,5,5,3,3,6,4,4,4,2,3,3,3,6,4,5,7,5,5,6]},{"url":"seattlecoffeegear.com/collections/superautomatic-espresso-machines","domain":"seattlecoffeegear.com","occurrences":110,"daily":[4,4,3,4,3,3,4,5,3,4,3,4,4,9,6,4,5,5,5,4,3,3,3,3,3,4,4,0,0]},{"url":"coffeeblog.co.uk/best-bean-to-cup-coffee-machines","domain":"coffeeblog.co.uk","occurrences":98,"daily":[3,4,3,4,5,5,5,4,2,2,4,3,3,4,4,5,3,4,3,4,3,2,2,2,3,2,4,2,2]},{"url":"coffeechronicler.com/gear/espresso-machines/best-under-500","domain":"coffeechronicler.com","occurrences":88,"daily":[3,2,3,4,3,4,3,3,3,2,4,4,4,3,3,4,3,4,1,3,2,3,2,2,3,2,2,3,3]},{"url":"delonghi.com/en-us/c/coffee-e-espresso/coffee-machines/automatic-espresso-machines","domain":"delonghi.com","occurrences":87,"daily":[4,4,0,2,4,3,4,3,4,4,4,4,3,3,2,2,2,3,3,3,3,3,3,3,3,4,3,1,2]},{"url":"tomsguide.com/home/coffee-makers/best-coffee-makers","domain":"tomsguide.com","occurrences":81,"daily":[2,3,3,5,2,2,1,1,2,2,3,4,2,4,3,2,1,2,4,3,1,3,2,3,4,3,4,3,4]},{"url":"tasteofhome.com/collection/best-automatic-espresso-machines","domain":"tasteofhome.com","occurrences":76,"daily":[2,5,2,4,4,5,2,4,2,2,4,3,5,2,3,4,2,2,3,1,0,3,2,2,1,1,1,2,1]},{"url":"tomsguide.com/home/coffee-makers/jura-e8-review","domain":"tomsguide.com","occurrences":73,"daily":[2,4,2,4,2,4,2,3,4,4,3,3,4,3,3,2,3,3,4,3,0,1,1,2,0,1,2,2,2]},{"url":"t3.com/features/best-bean-to-cup-coffee-machine","domain":"t3.com","occurrences":66,"daily":[2,1,1,3,1,0,2,5,3,3,4,3,1,0,2,1,1,2,3,3,1,2,1,1,1,4,3,2,5]},{"url":"tomscoffeecorner.com/best-espresso-machine-and-grinder-setups-under-500","domain":"tomscoffeecorner.com","occurrences":64,"daily":[2,2,2,2,2,2,2,2,3,3,3,2,3,4,3,2,1,1,1,1,1,3,3,2,2,2,2,2,1]},{"url":"forbes.com/sites/forbes-personal-shopper/article/best-espresso-machine","domain":"forbes.com","occurrences":63,"daily":[2,3,2,0,2,0,2,2,2,2,4,4,2,0,3,3,2,2,0,2,0,0,2,2,4,2,4,5,3]},{"url":"reddit.com/r/superautomatic/comments/1hc6uad/whats_the_best_super_automatic_coffee_machine","domain":"reddit.com","occurrences":58,"daily":[4,2,2,1,0,1,1,3,2,2,3,2,0,4,2,1,1,0,0,0,0,5,4,4,3,4,3,2,0]},{"url":"surlatable.com/o?c=espresso-machine-under-500","domain":"surlatable.com","occurrences":58,"daily":[2,1,2,2,2,3,2,2,2,1,2,2,2,3,2,2,2,2,2,2,2,3,2,2,2,2,2,1,1]},{"url":"coffeekev.com/automatic-espresso-machines","domain":"coffeekev.com","occurrences":56,"daily":[1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,2,3,2,3,2,2,3,3,3,4,3,3,3]},{"url":"cnet.com/home/kitchen-and-household/best-espresso-machine","domain":"cnet.com","occurrences":56,"daily":[0,2,1,1,0,0,1,3,2,1,3,1,2,3,3,1,1,0,2,1,2,3,2,2,5,2,3,3,2]},{"url":"youtube.com/watch?v=bRdBZag1d94","domain":"youtube.com","occurrences":54,"daily":[2,3,4,3,0,1,0,0,0,0,0,0,3,4,3,4,2,2,2,2,2,3,4,2,2,2,2,1,0]}]}};
+(function(){
+"use strict";
+var ENGCOL={chatgpt_gui:"#dc2626",google_ai_overview:"#db2777",google_ai_mode_gui:"#d97706",google_gemini_gui:"#65a30d",perplexity_gui:"#10a394",perplexity_sonar_pro:"#0891b2","openai_gpt-5":"#2a78d6",google_gemini_30_flash:"#0e9f6e",anthropic_claude_4_5_haiku:"#7c3aed"};
+var COMPCOL=["#dc2626","#db2777","#d97706","#65a30d","#2a78d6","#7c3aed","#0e9f6e","#0891b2","#78716c"];
+var NS="http://www.w3.org/2000/svg";
+var cs=getComputedStyle(document.documentElement);
+function tok(n,f){return (cs.getPropertyValue(n)||f).trim();}
+var MUTED=tok('--muted','#888'),LINE=tok('--line','#ddd'),ACCENT=tok('--accent','#0f766e'),FAINT=tok('--faint','#999');
+function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+function tx(x,y,s,a){var t=el("text",Object.assign({x:x,y:y},a));t.textContent=s;return t;}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function badge(t){return '<span class="badge '+t+'">'+(t==='api'?'[API]':'[GUI]')+'</span>';}
+function f1(v){return v==null?'-':v.toFixed(1);}
+
+/* ---------- shared time-axis line chart with gap band + hover ---------- */
+var T0=Date.parse("2026-05-28"),T1=Date.parse("2026-07-14"),DAY=86400000;
+var GAP_A=Date.parse("2026-06-17")+DAY/2, GAP_B=Date.parse("2026-07-07")-DAY/2;
+function lineChart(svgId,dates,series,opts){
+  var svg=document.getElementById(svgId);
+  var W=1000,H=+svg.getAttribute("viewBox").split(" ")[3];
+  var pL=46,pR=18,pT=14,pB=42,pw=W-pL-pR,ph=H-pT-pB;
+  var yMin=opts.yMin||0,yMax=opts.yMax;
+  var ts=dates.map(function(d){return Date.parse(d);});
+  function X(t){return pL+(t-T0)/(T1-T0)*pw;}
+  function Y(v){return pT+ph-(v-yMin)/(yMax-yMin)*ph;}
+  // gap band
+  svg.appendChild(el("rect",{x:X(GAP_A),y:pT,width:X(GAP_B)-X(GAP_A),height:ph,fill:"color-mix(in srgb, "+MUTED+" 8%, transparent)"}));
+  svg.appendChild(tx((X(GAP_A)+X(GAP_B))/2,pT+16,"no tracking (20 days)",{"text-anchor":"middle",fill:FAINT,"font-size":"11","font-family":"var(--mono)"}));
+  // y grid
+  opts.yTicks.forEach(function(g){var y=Y(g);svg.appendChild(el("line",{x1:pL,y1:y,x2:pL+pw,y2:y,stroke:LINE,"stroke-width":1}));svg.appendChild(tx(pL-8,y+4,g,{"text-anchor":"end",fill:MUTED,"font-size":"12","font-family":"var(--mono)"}));});
+  // x labels
+  ["2026-05-28","2026-06-05","2026-06-12","2026-06-17","2026-07-07","2026-07-14"].forEach(function(d){
+    svg.appendChild(tx(X(Date.parse(d)),H-18,d.slice(5),{"text-anchor":"middle",fill:MUTED,"font-size":"11","font-family":"var(--mono)"}));});
+  svg.appendChild(tx(pL+pw/2,H-2,"2026",{"text-anchor":"middle",fill:FAINT,"font-size":"11"}));
+  // series
+  series.forEach(function(s){
+    var seg=[];
+    for(var i=0;i<ts.length;i++){
+      var v=s.vis[i];
+      if(v==null){if(seg.length){draw(seg);seg=[];}continue;}
+      if(seg.length && ts[i]-ts[i-1]>DAY*1.5){draw(seg);seg=[];}
+      seg.push([X(ts[i]),Y(v)]);
+    }
+    if(seg.length)draw(seg);
+    function draw(pts){
+      if(pts.length===1){svg.appendChild(el("circle",{cx:pts[0][0],cy:pts[0][1],r:3,fill:s.color}));return;}
+      var at={d:"M"+pts.map(function(p){return p[0].toFixed(1)+" "+p[1].toFixed(1);}).join(" L"),fill:"none",stroke:s.color,"stroke-width":s.width||2.2,"stroke-linejoin":"round","stroke-linecap":"round"};
+      if(s.dash)at["stroke-dasharray"]="6 4";
+      if(s.opacity)at["opacity"]=s.opacity;
+      svg.appendChild(el("path",at));
+    }
+    if(s.dots){ts.forEach(function(t,i){if(s.vis[i]!=null)svg.appendChild(el("circle",{cx:X(t),cy:Y(s.vis[i]),r:2.6,fill:s.color}));});}
+  });
+  // hover layer
+  var fig=svg.closest("figure");
+  var tip=document.createElement("div");tip.className="tip";fig.appendChild(tip);
+  var guide=el("line",{y1:pT,y2:pT+ph,stroke:MUTED,"stroke-width":1,"stroke-dasharray":"3 3",visibility:"hidden"});
+  svg.appendChild(guide);
+  var hot=el("rect",{x:pL,y:pT,width:pw,height:ph,fill:"transparent"});
+  svg.appendChild(hot);
+  hot.addEventListener("mousemove",function(ev){
+    var r=svg.getBoundingClientRect(),sx=W/r.width;
+    var mx=(ev.clientX-r.left)*sx;
+    var best=0,bd=1e9;
+    for(var i=0;i<ts.length;i++){var d=Math.abs(X(ts[i])-mx);if(d<bd){bd=d;best=i;}}
+    var gx=X(ts[best]);
+    guide.setAttribute("x1",gx);guide.setAttribute("x2",gx);guide.setAttribute("visibility","visible");
+    var rows=series.map(function(s){return {n:s.name,c:s.color,v:s.vis[best]};}).filter(function(x){return x.v!=null;});
+    rows.sort(function(a,b){return b.v-a.v;});
+    tip.innerHTML="<b>"+dates[best]+"</b>"+rows.slice(0,10).map(function(x){return '<div class="row"><i style="background:'+x.c+'"></i>'+esc(x.n)+' <span class="num" style="margin-left:auto;padding-left:10px">'+x.v.toFixed(1)+'</span></div>';}).join("");
+    tip.style.display="block";
+    var fr=fig.getBoundingClientRect();
+    var lx=(ev.clientX-fr.left)+14, ly=(ev.clientY-fr.top)+10;
+    if(lx+tip.offsetWidth>fr.width-8)lx=lx-tip.offsetWidth-26;
+    tip.style.left=lx+"px";tip.style.top=ly+"px";
+  });
+  hot.addEventListener("mouseleave",function(){tip.style.display="none";guide.setAttribute("visibility","hidden");});
+}
+
+/* ---------- B1 topics & prompts ---------- */
+document.getElementById("t1").innerHTML=DATA.topicsPrompts.map(function(t){
+  return "<tr><td class='rowlead'>"+esc(t.topic)+"</td><td style='white-space:normal'>&ldquo;"+esc(t.prompt)+"&rdquo;</td><td class='n'>"+t.nEngines+"</td></tr>";}).join("");
+
+/* ---------- B2 overall visibility ---------- */
+document.getElementById("avgVis").textContent=DATA.overallDaily.avgAggregate.toFixed(1);
+document.getElementById("meanVis").textContent=DATA.overallDaily.avgSimpleMean.toFixed(1);
+lineChart("cOverall",DATA.overallDaily.dates,[{name:"Visibility",color:ACCENT,width:2.6,dots:true,vis:DATA.overallDaily.vis}],{yMax:70,yTicks:[0,20,40,60]});
+
+/* ---------- B3 scorecards ---------- */
+(function(){
+  var s=DATA.scorecards,t=s.trends;
+  function d(v,unit,invert){
+    if(v==null||isNaN(v))return '<span class="delta flat">no prior period</span>';
+    var good=invert?v<0:v>0; var cls=v===0?'flat':(good?'up':'down');
+    var arrow=v===0?'±':(v>0?'▲':'▼');
+    var note=invert?(v<0?' (better)':v>0?' (worse)':''):'';
+    return '<span class="delta '+cls+'">'+arrow+' '+Math.abs(v)+unit+note+' vs prev.</span>';
+  }
+  var defs=[
+    ["Visibility Score",s.visibilityScore.toFixed(1),d(t.visibilityScore,'')],
+    ["Sentiment",s.sentiment.toFixed(1),d(t.sentiment,'')],
+    ["Mentions",s.mentions.toLocaleString("en-US"),d(t.mentions,'')],
+    ["Citations",s.citations.toLocaleString("en-US"),d(t.citations,'')],
+    ["Avg Position",s.avgPosition.toFixed(1),d(t.avgPosition,'',true)],
+    ["Detection Rate",s.detectionRate.toFixed(1)+"%",d(t.detectionRate,'pp')],
+    ["Top-3 Rate",s.top3.toFixed(1)+"%",d(t.top3,'pp')]
+  ];
+  document.getElementById("cards").innerHTML=defs.map(function(x){
+    return '<div class="card"><span class="lbl">'+x[0]+'</span><div class="val num">'+x[1]+'</div>'+x[2]+'</div>';}).join("");
+})();
+
+/* ---------- B4 by engine ---------- */
+(function(){
+  var maxV=Math.max.apply(null,DATA.byEngine.table.map(function(e){return e.visibility;}));
+  document.getElementById("t4").innerHTML=DATA.byEngine.table.map(function(e){
+    var w=Math.round(e.visibility/maxV*100);
+    var bar='<span style="position:relative;display:inline-block;min-width:64px;text-align:right"><span style="position:absolute;right:0;top:50%;transform:translateY(-50%);height:60%;width:'+w+'%;background:color-mix(in srgb, var(--teal) 22%, transparent);border-radius:3px"></span><span style="position:relative">'+e.visibility.toFixed(1)+'</span></span>';
+    return "<tr><td>"+esc(e.name)+badge(e.tier)+"</td><td class='n'>"+bar+"</td><td class='n'>"+f1(e.detectionRate)+"</td><td class='n'>"+f1(e.avgPosition)+"</td><td class='n'>#"+e.brandRank+" of "+e.pool+"</td></tr>";}).join("");
+  var lg=document.getElementById("lg4");
+  var series=DATA.byEngine.series.map(function(s){
+    var sp=document.createElement("span");var i=document.createElement("i");
+    i.className=s.tier==='gui'?'dash':'';i.style.borderTopColor=ENGCOL[s.id];
+    sp.appendChild(i);sp.appendChild(document.createTextNode(s.name+(s.tier==='api'?' [API]':' [GUI]')));lg.appendChild(sp);
+    // align each engine series onto the full date axis
+    var m={};s.dates.forEach(function(d,j){m[d]=s.vis[j];});
+    var vis=DATA.overallDaily.dates.map(function(d){return m[d]!=null?m[d]:null;});
+    return {name:s.name,color:ENGCOL[s.id],dash:s.tier==='gui',vis:vis};
+  });
+  lineChart("cEngines",DATA.overallDaily.dates,series,{yMax:80,yTicks:[0,20,40,60,80]});
+})();
+
+/* ---------- B5 top-10 brands ---------- */
+(function(){
+  var lg=document.getElementById("lg5");var ci=0;
+  var series=DATA.topCompetitorsDaily.series.map(function(s){
+    var col=s.isOwn?ACCENT:COMPCOL[ci++ %COMPCOL.length];
+    var sp=document.createElement("span");var i=document.createElement("i");
+    i.style.borderTopColor=col;if(s.isOwn)i.style.borderTopWidth="3.5px";
+    sp.appendChild(i);sp.appendChild(document.createTextNode(s.name+(s.isOwn?" (ours)":"")));lg.appendChild(sp);
+    return {name:s.name+(s.isOwn?" (ours)":""),color:col,width:s.isOwn?3.4:1.7,opacity:s.isOwn?1:.85,vis:s.vis};
+  });
+  lineChart("cComps",DATA.topCompetitorsDaily.dates,series,{yMax:70,yTicks:[0,20,40,60]});
+})();
+
+/* ---------- B6 competitor table ---------- */
+document.getElementById("t6").innerHTML=DATA.competitorTable.map(function(c){
+  return "<tr"+(c.isOwn?" class='own'":"")+"><td class='n'>"+c.rank+"</td><td>"+esc(c.name)+(c.isOwn?" ★":"")+"</td><td class='n'>"+c.visibility.toFixed(1)+"</td><td class='n'>"+c.detectionRate.toFixed(1)+"</td><td class='n'>"+c.avgRank.toFixed(1)+"</td></tr>";}).join("");
+
+/* ---------- B7 citation domains ---------- */
+document.getElementById("citTotals").innerHTML="<strong>"+DATA.citationMeta.totalCitations.toLocaleString("en-US")+"</strong> citations across <strong>"+DATA.citationMeta.uniqueDomains+"</strong> domains in the window";
+document.getElementById("t7").innerHTML=DATA.citationDomains.map(function(d){
+  return "<tr><td class='n'>"+d.rank+"</td><td>"+esc(d.domain)+"</td><td class='n'>"+d.occurrences.toLocaleString("en-US")+"</td><td class='n'>"+d.share.toFixed(1)+"%</td><td>"+(d.mentionsBrand?"<span class='yes'>Yes</span>":"<span class='no'>No</span>")+"</td></tr>";}).join("");
+
+/* ---------- A1 topic ranks ---------- */
+document.getElementById("ta1").innerHTML=DATA.topicRank.map(function(t){
+  return "<tr><td class='rowlead'>"+esc(t.topic)+"</td><td class='n'>"+(t.brandRank?("#"+t.brandRank):"-")+"</td><td class='n'>"+t.pool+"</td><td class='n'>"+t.visibility.toFixed(1)+"</td></tr>";}).join("");
+
+/* ---------- A2 engine ranks ---------- */
+document.getElementById("ta2").innerHTML=DATA.engineRank.map(function(e){
+  return "<tr><td>"+esc(e.name)+badge(e.tier)+"</td><td class='n'>#"+e.brandRank+"</td><td class='n'>"+e.pool+"</td><td class='n'>"+e.visibility.toFixed(1)+"</td></tr>";}).join("");
+
+/* ---------- A3 pivot heatmap ---------- */
+(function(){
+  var P=DATA.pivotTopicEngine;
+  function rcol(rank){
+    if(rank==null)return null;
+    var t=Math.max(0,Math.min(1,1-(rank-1)/9));
+    var L=[224,240,237],D=[15,90,80];
+    var c=L.map(function(l,i){return Math.round(l+(D[i]-l)*t);});
+    return {bg:"rgb("+c.join(",")+")",fg:t>0.55?"#eafaf6":"#0b3d37"};
+  }
+  var h='<table class="hm" style="border-collapse:separate;border-spacing:3px;font-size:12px;font-variant-numeric:tabular-nums;table-layout:fixed;min-width:838px">';
+  h+='<colgroup><col style="width:190px">';P.engines.forEach(function(){h+='<col style="width:68px">';});h+='</colgroup>';
+  h+='<thead><tr><th style="text-align:left;vertical-align:bottom;color:var(--muted);font-weight:500;padding:4px 8px">Topic</th>';
+  P.engines.forEach(function(e){h+='<th style="vertical-align:bottom;height:70px;white-space:normal;padding:5px 3px;font-weight:500;font-size:11px;line-height:1.15;color:var(--muted)"><span style="display:block;margin-bottom:3px">'+esc(e.name)+'</span>'+badge(e.tier)+'</th>';});
+  h+='</tr></thead><tbody>';
+  P.rows.forEach(function(r){
+    h+='<tr><td style="text-align:left;padding:7px 8px;border-radius:0;white-space:normal;line-height:1.25">'+esc(r.topic)+'</td>';
+    r.cells.forEach(function(c){
+      if(c.rank==null){h+='<td style="background:var(--surface-2);color:var(--faint)" title="not detected in this topic on this engine (visibility 0)">-</td>';}
+      else{var cc=rcol(c.rank);h+='<td style="background:'+cc.bg+';color:'+cc.fg+'" title="Brand Rank #'+c.rank+' · visibility '+c.vis+'">'+c.rank+'</td>';}
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById("hmPivot").innerHTML=h;
+})();
+
+/* ---------- A4 best brand per GUI engine ---------- */
+(function(){
+  var P=DATA.pivotBestBrand;
+  var t=document.getElementById("ta4");
+  t.querySelector("thead").innerHTML="<tr><th class='n'>Rank</th>"+P.engines.map(function(e){return "<th>"+esc(e.name)+badge('gui')+"</th>";}).join("")+"</tr>";
+  t.querySelector("tbody").innerHTML=P.rows.map(function(r){
+    return "<tr><td class='n'>#"+r.place+"</td>"+r.cells.map(function(c){
+      if(!c)return "<td class='no'>-</td>";
+      var inner=esc(c.name)+" <span class='num' style='color:var(--faint);font-size:.82em'>"+c.vis.toFixed(1)+"</span>";
+      return c.isOwn?"<td style='background:var(--teal-soft);font-weight:600'>"+inner+" ★</td>":"<td>"+inner+"</td>";
+    }).join("")+"</tr>";}).join("");
+})();
+
+/* ---------- A5 URL x day heatmap ---------- */
+(function(){
+  var U=DATA.urlCitationsDaily;
+  var maxC=0;U.urls.forEach(function(u){u.daily.forEach(function(v){if(v>maxC)maxC=v;});});
+  function ccol(v){
+    if(!v)return null;
+    var t=Math.max(.08,Math.min(1,v/maxC));
+    var L=[224,240,237],D=[15,90,80];
+    var c=L.map(function(l,i){return Math.round(l+(D[i]-l)*t);});
+    return {bg:"rgb("+c.join(",")+")",fg:t>0.55?"#eafaf6":"#0b3d37"};
+  }
+  var gapAfter=U.dates.indexOf("2026-06-17");
+  var h='<table class="hm" style="border-collapse:separate;border-spacing:2px;font-size:11px;font-variant-numeric:tabular-nums">';
+  h+='<thead><tr><th style="text-align:left;color:var(--muted);font-weight:500;padding:4px 8px">URL</th><th class="n" style="color:var(--muted);font-weight:500;padding:4px 6px">Total</th>';
+  U.dates.forEach(function(d,i){
+    var lbl=(i%4===0||i===U.dates.length-1)?d.slice(5):'';
+    h+='<th style="min-width:22px;padding:3px 1px;color:var(--faint);font-weight:500;font-size:9.5px;font-family:var(--mono)">'+lbl+'</th>';
+    if(i===gapAfter)h+='<th style="min-width:14px;padding:0"></th>';
+  });
+  h+='</tr></thead><tbody>';
+  U.urls.forEach(function(u){
+    var short=u.url.length>46?u.url.slice(0,44)+"…":u.url;
+    h+='<tr><td style="text-align:left;padding:5px 8px;white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis" title="'+esc(u.url)+'">'+esc(short)+'</td>';
+    h+='<td class="n" style="padding:5px 6px;color:var(--muted)">'+u.occurrences+'</td>';
+    u.daily.forEach(function(v,i){
+      var c=ccol(v);
+      h+= c?('<td style="background:'+c.bg+';color:'+c.fg+'" title="'+U.dates[i]+': '+v+' citation'+(v>1?'s':'')+'">'+v+'</td>')
+           :('<td style="background:var(--surface-2)" title="'+U.dates[i]+': 0"></td>');
+      if(i===gapAfter)h+='<td style="background:repeating-linear-gradient(45deg,transparent,transparent 3px,var(--line) 3px,var(--line) 4px)" title="20-day tracking gap"></td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById("hmUrls").innerHTML=h;
+})();
+
+/* ---------- reveal ---------- */
+var rm=window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+if(!rm && "IntersectionObserver" in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.08});document.querySelectorAll(".reveal").forEach(function(n){io.observe(n);});}
+else document.querySelectorAll(".reveal").forEach(function(n){n.classList.add("in");});
+})();
+</script>
+</body>
+</html>
