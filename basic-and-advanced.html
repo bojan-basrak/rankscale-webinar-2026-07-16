@@ -20,8 +20,9 @@
     tr.own td:first-child{font-weight:600}
     .yes{color:var(--good);font-weight:600} .no{color:var(--faint)}
     /* scorecards */
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:1.4rem 0}
-    .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+    .cards{display:flex;flex-direction:column;gap:12px;margin:1.4rem 0}
+    .cardrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;flex:0 1 218px;min-width:150px}
     .card .lbl{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
     .card .val{font-family:var(--serif);font-size:1.9rem;line-height:1.15;margin:2px 0 0;font-variant-numeric:tabular-nums}
     .card .delta{font-family:var(--mono);font-size:.72rem;margin-top:2px}
@@ -349,8 +350,10 @@ lineChart("cOverall",DATA.overallDaily.dates,[{name:"Visibility",color:ACCENT,wi
     ["Detection Rate",s.detectionRate.toFixed(1)+"%",d(t.detectionRate,'pp')],
     ["Top-3 Rate",s.top3.toFixed(1)+"%",d(t.top3,'pp')]
   ];
-  document.getElementById("cards").innerHTML=defs.map(function(x){
-    return '<div class="card"><span class="lbl">'+x[0]+'</span><div class="val num">'+x[1]+'</div>'+x[2]+'</div>';}).join("");
+  function card(x){return '<div class="card"><span class="lbl">'+x[0]+'</span><div class="val num">'+x[1]+'</div>'+x[2]+'</div>';}
+  document.getElementById("cards").innerHTML=
+    '<div class="cardrow">'+defs.slice(0,3).map(card).join("")+'</div>'+
+    '<div class="cardrow">'+defs.slice(3).map(card).join("")+'</div>';
 })();
 
 /* ---------- B4 by engine ---------- */
